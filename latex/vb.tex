@@ -1,0 +1,163 @@
+This section focuses on a class of approximate inference algorithms based on variational inference. The basic idea is to choose an approximation $q(x)$ from a tractable family of distributions and then make this approximation as close as possible to the true posterior $p^{\ast}(x)$. This reduces inference to an optimization problem.\\
+
+We can use KL divergence to measure the distance between distributions. In particular, we use reverse KL to make the computation tractable.
+\begin{equation}
+    KL(q||p^{\ast}) = \sum_x q(x) \log \frac{q(x)}{p^{\ast}(x)}
+\end{equation}
+Let $\tilde{p}(x)=p^{\ast}(x)Z$ be the un-normalized distribution, then our objective function:
+\begin{eqnarray}
+    J(q) = KL(q||\tilde{p})= \sum_x q(x) \log \frac{q(x)}{p^{\ast}(x)Z} 
+    = \sum_x q(x) \log \frac{q(x)}{p^{\ast}(x)} - \log Z = KL(q||p^{\ast}) - \log Z
+\end{eqnarray}
+Since KL divergence is non-negative, $J(q)$ is an upper bound on the marginal likelihood:
+\begin{eqnarray}
+    J(q) = KL(q||p^{\ast}) - \log Z \geq -\log Z = -\log p(D)
+\end{eqnarray}
+when $q(x)$ equals the true posterior $p^{\ast}(x)$, the KL divergence vanishes and the optimal value $J(q^{\ast})$ equals the log partition function and for all other values of $q$ it yields a bound. $J(q)$ is called the \textit{variational free energy} and can be written as:
+\begin{equation}\label{equ:var_obj}
+   \min_q J(q) = E_{q}[\log q(x)]+E_{q}[-\log \tilde{p}(x)] = -H(q) + E_q[E(x)]
+\end{equation}
+The variational objective function (\ref{equ:var_obj}) is closely related to energy minimization in statistical physics. The first term acts as a regularizer by encouraging maximum entropy, while the second term is the expected energy and encourages the variational distribution $q$ to explain the data. 
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.7\textwidth, trim={10 10 10 10}]{figures/kl_bimodal.png}
+    \caption{Forward vs reverse KL on a bimodal distribution. The blue contours is the true distribution $p(x)$. The red contours is approximate distribution $q(x)$.}
+    \label{fig:kl_bimodal}
+\end{figure}
+
+The reverse KL that acts as a penalty term in the variational objective is also known as I-projection or information projection. In the reverse KL, $q(x)$ will typically under-estimate the support of $p(x)$ and will lock onto one of its modes. This is due to $q(x)=0$ whenever $p(x)=0$ to make sure the KL divergence stays finite. On the other hand, the forward KL, known as M-projection or momement projection is zero avoiding for $q(x)$ and will over-estimate the support of $p(x)$ as shown in Figure \ref{fig:kl_bimodal}.\\
+
+One of the most popular forms of variational inference is called the \textit{mean field} approximation, where we assume that the posterior is a fully factorized approximation of the form:
+\begin{equation}
+    q(x) = \prod_i q_i(x_i)
+\end{equation}
+where we optimize over the parameters of each marginal distribution $q_j(x_j)$. Our goal is to minimize variational free energy $J(q)$ or equivalently, maximize the lower bound:
+\begin{equation}
+    L(q) = -J(q) = \sum_x q(x)\log \frac{\tilde{p}(x)}{q(x)}
+\end{equation}
+We can re-write the objective for each marginal distribution $q_j$, keeping the rest of the terms as constants:
+\begin{eqnarray}
+    L(q_j) &=& \sum_x \prod_i q_i(x_i)\bigg[\log \tilde{p}(x) - \sum_k \log q_k(x_k)  \bigg] \\
+    &=& \sum_{x_j}\sum_{x_{-j}}q_j(x_j)\prod_{i\neq j}q_i(x_i)\bigg[\log \tilde{p}(x) - \sum_k \log q_k(x_k) \bigg] \\
+    &=& \sum_{x_j}q_j(x_j)\log f_j(x_j) - \sum_{x_j}q_j(x_j)\sum_{x_{-j}}\prod_{i\neq j}q_i(x_i)\bigg[\sum_{k\neq j}\log q_k(x_k) + \log q_j(x_j) \bigg] \\
+    &=& \sum_{x_j}q_j(x_j)\log f_j(x_j) - \sum_{x_j}q_j(x_j)\log q_j(x_j) + \mathrm{const}
+\end{eqnarray}
+where we defined $\log f_j(x_j) = \sum_{x_{-j}}\prod_{i\neq j}q_i(x_i)\log \tilde{p}(x) = E_{-q_j}[\log \tilde{p}(x)]$. Since we are replacing the values by their mean value, the method is known as mean field. We can re-write $L(q_j) = -KL(q_j||f_j)$ and therefore maximize the objective by setting $q_j = f_j$ or equivalently:
+\begin{equation}
+    \log q_j(x_j) = \log f_j(x_j) = E_{-q_j}[\log \tilde{p}(x)]
+\end{equation}
+where the functional form of $q_j$ will be determined by the type of variables $x_j$ and their probability model.\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/vb_gmm.png}
+    \caption{Variational Bayes EM applied to a Mixture of Gaussians}
+    \label{fig:vb_gmm}
+\end{figure}
+
+Figure \ref{fig:vb_gmm} shows the posterior clustering assignment as a result of running Variational Bayes EM algorithm on a Gaussian Mixture. The algorithm correctly identified $K=6$ clusters using $10$ clusters as the starting point. We can see the rapid increase in the variational objective when the algorithm figures out that it could increase the objective by removing unnecessary clusters in early iterations, while the plateau results in moving the clusters around. This is also evident from the prior and posterior parameter values for mixing proportions $\alpha_k$. As the number of iterations increase the counts for unnecessary mixture components drop to zero. 
+
+\subsection{Application: Topic Models}
+
+A topic model is a latent variable model for discrete data such as text documents. Latent Dirichlet Allocation (LDA) is a topic model that represents each document as a finite mixture of topics, where a topic is a distribution over words. The objective is to learn the shared topic distribution and topic proportions for each document. LDA assumes a bag of words model in which the words are exchangeable and as a result sentence structure is not preserved, i.e. only the word counts matter. Thus, each document is reduced to a vector of counts over the vocabulary $V$ and the entire corpus of $D$ documents is summarized in a \textit{term-document} matrix $A_{V\times D}$. LDA can be seen as a non-negative matrix factorization problem that takes the term-document matrix and factorizes it into a product of topics $W_{V\times K}$ and topic proportions $H_{K\times D}$: $A = WH$.\\
+
+A common method for adjusting the word counts is \textit{tf-idf} that logarithmically drives down to zero word counts that occur frequently across documents: $A_{t,d} \log \frac{D}{n_t}$, where $D$ is the total number of documents in the corpus and $n_t$ is the number of documents where term $t$ appears. The \textit{tf-idf} smoothing identifies the sets of words that are discriminative for documents and leads to better model performance. The term-document matrix generalizes from counts of individual words (unigrams) to larger structural units such as $n$-grams. In the case of $n$-grams different smoothing techniques (such as Laplace smoothing) are used to address the lack of observations in a very large feature space.\\ 
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.5\textwidth, trim={10 10 10 10}]{figures/lda_gm.png}
+    \caption{Latent Dirichlet Allocation (LDA) graphical model}
+    \label{fig:lda_gm}
+\end{figure}
+
+Figure \ref{fig:lda_gm} shows the graphical model for the Latent Dirichlet Allocation (LDA). The LDA topic model associates each word $x_{i,d}$ with a topic label $z_{i,d} \in \{1,2,...,K\}$. Each document is associated with topic proportions $\theta_d$ that could be used to measure document similarity. The topics $\beta_k$ are shared across all documents. The hyper-parameters $\alpha$ and $\eta$ capture our prior knowledge of topic proportions and topics, respectively, e.g. from past on-line training of the model. The full generative model can be specified as follows:
+\begin{eqnarray}
+    \theta_d | \alpha &\sim& \mathrm{Dir}(\alpha)\\
+    z_{i,d} | \theta_d &\sim& \mathrm{Cat}(\theta_d)\\
+    \beta_k | \eta &\sim& \mathrm{Dir}(\eta)\\
+    x_{i,d}|z_{i,d}=k,\beta &\sim& \mathrm{Cat}(\beta_k)
+\end{eqnarray}
+The joint distribution for a single document $d$ can be written as follows \cite{Blei2003}:
+\begin{equation}
+    p(x,z,\theta,|\alpha,\beta) = p(\theta_d|\alpha)\prod_{i=1}^{n_d}p(z_{i,d}|\theta_d)p(x_{i,d}|z_{i,d},\beta) 
+\end{equation}
+The parameters $\alpha$ and $\beta$ are corpus-level parameters, the variable $\theta_d$ is sampled once every document, while $z_{i,d}$ and $x_{i,d}$ are word-level variables sampled once for each word in each document. Unlike a multinomial clustering model where each document is associated with a single topic, LDA represents each document as a mixture of topics.\\
+
+The key inference problem that we need to solve in order to use LDA is that of computing the posterior distribution of the latent variables for a given document: $p(\theta,z|x,\alpha,\beta)$. The posterior can be approximated with the following variational distribution:
+\begin{equation}
+    q(\theta,z|\gamma, \phi) = q(\theta|\gamma) \prod_{i=1}^{n}q(z_i|\phi_i)
+\end{equation}
+The variational parameters are optimized to maximize the Evidence Lower BOund (ELBO):
+\begin{equation}
+    \log p(x|\alpha,\eta) \geq L(x,\phi,\gamma,\lambda) = E_q[\log p(x,z,\theta,\beta|\alpha, \eta)] - E_q[\log q(z,\theta,\beta)] 
+\end{equation}
+We choose a fully factored distribution $q$ of the form:
+\begin{equation}
+    q(z_{id}=k)=\phi_{dwk}; ~~~ q(\theta_d) \sim \mathrm{Dir}(\theta_d|\gamma_d); ~~~ q(\beta_k) \sim \mathrm{Dir}(\beta_k|\lambda_k)
+\end{equation}
+We can expand the lower bound by using the factorizations of $p$ and $q$:
+\begin{equation*}\label{equ:var1}
+L(\gamma, \phi; \alpha, \beta) = \mathbb{E}_q [\log p(\theta|\alpha)] + \mathbb{E}_q [\log p(z|\theta)] + \mathbb{E}_q [\log p(w|z,\beta)] - \mathbb{E}_q[\log q(\theta)] - \mathbb{E}_q[\log q(z)]
+\end{equation*}
+Each of the five terms in $L(\gamma, \phi; \alpha, \beta)$ can be expanded \cite{Blei2003} as follows:
+\begin{eqnarray}\label{equ:var2}
+ L(\gamma, \phi; \alpha, \beta) &=& \log \Gamma(\sum_{j=1}^{k}\alpha_j) - \sum_{i=1}^{k}\log \Gamma(\alpha_i) + \sum_{i=1}^{k}(\alpha_i-1)(\Psi(\gamma_i)-\Psi(\sum_{j=1}^{k}\gamma_j)) \\
+ &+& \sum_{n=1}^{N}\sum_{i=1}^{k}\phi_{ni}(\Psi(\gamma_i)-\Psi(\sum_{j=1}^{k}\gamma_j)) \\
+ &+& \sum_{n=1}^{N}\sum_{i=1}^{k}\sum_{j=1}^{V}\phi_{ni}w_{n}^{j}\log \beta_{ij} \\
+ &-& \log \Gamma(\sum_{j=1}^{k}\gamma_j) + \sum_{i=1}^{k}\log \Gamma(\gamma_i) - \sum_{i=1}^{k}(\gamma_i-1)(\Psi(\gamma_i)-\Psi(\sum_{j=1}^{k}\gamma_j)) \\
+ &-& \sum_{n=1}^{N}\sum_{i=1}^{k}\phi_{ni}\log \phi_{ni} 
+\end{eqnarray}
+where $\Psi(x)=\frac{d}{dx}\log \Gamma(x)$ is the digamma function. $L(\gamma,\phi;\alpha,\beta)$ can be maximized using coordinate ascent over the variational parameters $\phi$, $\gamma$, $\lambda$ \cite{Blei2003}:
+\begin{eqnarray}\label{equ:var3}
+    \phi_{dwk} &\propto& \exp \{E_q[\log \theta_{dk}]+E_q[\log \beta_{kw}]\}\\
+    \gamma_{dk} &=& \alpha + \sum_w n_{dw}\phi_{dwk} \\
+    \lambda_{kw} &=& \eta + \sum_d n_{dw}\phi_{dwk}
+\end{eqnarray}
+where the expectations under $q$ of $\log \theta$ and $\log \beta$ are:
+\begin{equation}
+    E_q[\log \theta_{dk}] = \Psi(\gamma_{dk}) - \Psi(\sum_{i=1}^{K}\gamma_{di}) ~~~ E_q[\log \beta_{kw}] = \Psi(\lambda_{kw})-\Psi(\sum_{i=1}^{W}\lambda_{ki})
+\end{equation}
+
+The variational parameter updates in (\ref{equ:var3}) can be used in an online setting that does not require a full pass through the entire corpus at each iteration. An online update of variational parameters enables topic analysis for very large datasets including streaming data. Online VB for LDA is described in Algorithm \ref{alg:online_vb_lda}.\\
+
+\begin{algorithm}
+\caption{Online variational Bayes for LDA \cite{Hoffman2010}}
+\label{alg:online_vb_lda}
+\begin{algorithmic}[1]
+\STATE Define $\rho_t = (\tau_0 + t)^{-\kappa}$
+\STATE Initialize $\lambda$ randomly
+\STATE for t = 1 to $\infty$ do 
+\STATE ~~~ \textit{E step:} 
+\STATE ~~~ Initialize $\gamma_{tk} = 1$ 
+\STATE ~~~ \textbf{repeat} 
+\STATE ~~~ ~~~ Set $\phi_{twk} \propto \exp \{E_q[\log \theta_{tk}]+E_q[\log \beta_{kw}]\}$ 
+\STATE ~~~ ~~~ Set $\gamma_{tk} = \alpha + \sum_{w}\phi_{twk}n_{tw}$
+\STATE ~~~ \textbf{until} $\frac{1}{K}\sum_k|\Delta \gamma_{tk}| < \epsilon$
+\STATE ~~~ \textit{M step:} 
+\STATE ~~~ Compute $\tilde{\lambda}_{kw} = \eta + Dn_{tw}\phi_{twk}$ 
+\STATE ~~~ Set $\lambda = (1-\rho_t)\lambda + \rho_t \tilde{\lambda}$ 
+\STATE end for
+\end{algorithmic}
+\end{algorithm}
+
+As the $t$-th vector of word counts $n_t$ is observed, we perform an E step to find locally optimal values of $\gamma_t$ and $\phi_t$, holding $\lambda$ fixed. We then compute $\tilde{\lambda}$ that would be optimal if our entire corpus consisted of the single document $n_t$ repeated $D$ times. We then update $\lambda$ as a weighted average of its previous value and $\tilde{\lambda}$, where the weight is given by the learning parameter $\rho_t = (\tau_0 + t)^{-\kappa}$ for $\kappa \in (0.5,1]$, controlling the rate at which old values of $\tilde{\lambda}$ are forgotten.\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/lda_onlinevb.png}
+    \caption{Online Variational Bayes Inference Results for LDA.}
+    \label{fig:lda_onlinevb}
+\end{figure}
+
+Figure \ref{fig:lda_onlinevb} shows the inference results for the online VB LDA algorithm on 20newsgroups dataset consisting of $11,314$ documents and a compressed vocabulary size of $1K$ words. The number of topics was set to $K=20$ and the batch size (number of documents to use in each EM iteration) was set to $512$. Figure \ref{fig:lda_onlinevb} shows the Hinton diagram of the inferred topic matrix $W_{V\times K}$ where only the first $64$ rows are shown. The perplexity plots show the improvement in model ability to explain the data as the number of EM iterations increases, where perplexity is defined as follows:
+\begin{equation}\label{equ:perplexity1}
+   \mathrm{Perplexity(w_{test})} = \exp\{-\frac{1}{D_{test}}\sum_{d} \frac{1}{n_d} \sum_{w \in n_d} \log p(w_{test})\}
+\end{equation}
+Model selection can be done by evaluating perplexity for different values of $K$. Guided by the fact that there are $20$ different newsgroups, the value of $K$ was set to $20$. Finally, the top $20$ words for a random sample of $4$ topics are shown in Figure \ref{fig:lda_onlinevb}. The four topics are about information, sports, computers and school.\\
+
+\subsection{Stochastic Variational Inference}
+
+One limitation of LDA is that the number of topics is fixed ahead of time. A commonly used approach to finding the number of topics $K$ is cross-validation. However, for very large data-sets this approach may not be practical. We can address this issue with a Bayesian non-parametric topic model where the number of topics is learned from data: the Hierarchical Dirichlet Process (HDP) topic model.
+
+

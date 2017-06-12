@@ -1,0 +1,22 @@
+Scaling probabilistic inference algorithms to large datasets and parallel computing is a challenge of great importance and considerable research interest. Here, we focus on a strategy called Hogwild Gibbs sampling that runs local Gibbs sampling updates on multiple processors in parallel while only periodically communicating updated statistics.
+
+
+\begin{algorithm}
+\caption{Hogwild Gibbs}
+\label{alg:hogwild_gibbs}
+\begin{algorithmic}[1]
+\STATE Input: partition $\{I_1,...,I_K \}$ of data $x$. 
+\STATE Init $x^{(1)}$ 
+\STATE for t = 1,2,...,T do 
+\STATE ~~~ for k = 1,2,...,K in parallel do 
+\STATE ~~~ ~~~ $X_{I_k}^{(t+1)} \leftarrow \mathrm{LocalGibbs}(x^{(t)},I_k,q(t,k))$ 
+\STATE
+\STATE function LocalGibbs($x, I, q$) 
+\STATE ~~~ for j = 1,2,...,q do
+\STATE ~~~ ~~~ for $i\in I$ in order do 
+\STATE ~~~ ~~~ ~~~ $x_i \leftarrow$ sample $x_i | x_{-i}$ 
+\STATE ~~~ return $x$ 
+\end{algorithmic}
+\end{algorithm}
+
+

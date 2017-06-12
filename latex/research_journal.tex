@@ -1,0 +1,65 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{algorithm}                      % algorithm environment
+\usepackage{algorithmic}                    % algorithm format
+\usepackage{ragged2e}                       % \justify the text (similar to MS word)
+\usepackage{amsmath}                        % better math environment
+\usepackage{booktabs}                       % better tables
+\usepackage[all]{xy}                        % drawing graphs
+\usepackage{setspace}                       % enable double and half spacing
+\usepackage[toc]{appendix}                  % makes appendices nicer
+\usepackage{anysize}                        % allow for changing margin widths
+\usepackage{multirow}                       % for constructing nested tables
+\usepackage{graphicx, amssymb, cite, amsmath, stfloats, acronym} %thesis
+\usepackage{subfigure, longtable, lscape, amssymb, amsfonts, rotating}
+\usepackage{caption}
+\usepackage{array}
+
+\floatstyle{plain}
+\newfloat{myalgo}{tbhp}{mya}
+
+\newenvironment{Algorithm}[2][tbh]%
+{\begin{myalgo}[#1]
+\centering
+\begin{minipage}{#2}
+\begin{algorithm}[H]}%
+{\end{algorithm}
+\end{minipage}
+\end{myalgo}}
+
+\newtheorem{theorem}{Theorem}[section]
+
+
+\begin{document}
+
+\title{Research Journal}
+\date{June 12, 2017}
+\author{Vadim Smolyakov (vss@mit.edu)}
+\maketitle
+
+%\abstract
+%\input{abstract.tex}
+
+%\section{Hogwild Gibbs}
+%\input{hogwild.tex}
+
+\section{Bayesian Non-parametrics}
+\input{bnp.tex}
+
+\section{Variational Inference}
+\input{vb.tex}
+
+\section{Optimization}
+\input{opt.tex}
+
+\section{Misc}
+\input{misc.tex}
+
+%\section{Experiments}
+%\input{experiments.tex}
+
+\bibliographystyle{ieee}
+\bibliography{research_journal}
+
+\end{document}
+
+

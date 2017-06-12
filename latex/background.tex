@@ -1,0 +1,39 @@
+We focus on parallelizable clustering algorithms starting with Dirichlet Process (DP) K-means.
+
+\begin{algorithm}
+\caption{DP-means sequential}
+\label{alg:dpmeans1}
+\begin{algorithmic}[1]
+\STATE Init. $k = 1$, $l_1={x_1,...x_n}$ and $\mu_1$ the global mean
+\STATE Init. labels $z_i=1$ for all $i=1,...,n$
+\STATE Repeat until convergence:
+\STATE ~~~ for each $x_i$: 
+\STATE ~~~ ~~~ compute $d_{ic} = ||x_i-\mu_c||^{2}$ for $c=1,...,K$
+\STATE ~~~ ~~~ if $\min_c d_{ic} > \lambda$, set $K=K+1$ and $\mu_k = x_i$
+\STATE ~~~ ~~~ otherwise, set $z_i = \mathrm{argmin}_c d_{ic}$
+\STATE ~~~ Generate clusters $l_1,...,l_k$, where $l_j=\{x_i|z_i=j\}$
+\STATE ~~~ For each cluster $l_j$, compute $\mu_j = \frac{1}{|l_j|}\sum_{x\in l_j} x$
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{DP-means parallel}
+\label{alg:dpmeans1}
+\begin{algorithmic}[1]
+\STATE Init. $k = 1$, $l_1={x_1,...x_n}$ and $\mu_1$ the global mean
+\STATE Init. labels $z_i=1$ for all $i=1,...,n$ and distribute $X$
+\STATE Repeat until convergence:
+\STATE ~~~ Master communicates $\mu$ and distributed $X$ to each worker
+\STATE ~~~ for each worker in parallel:
+\STATE ~~~ ~~~ for each $x_i$: 
+\STATE ~~~ ~~~ ~~~ compute $d_{ic} = ||x_i-\mu_c||^{2}$ for $c=1,...,K$
+\STATE ~~~ ~~~ ~~~ if $\min_c d_{ic} > \lambda$, set $K=K+1$ and $\mu_k = x_i$
+\STATE ~~~ ~~~ ~~~ otherwise, set $z_i = \mathrm{argmin}_c d_{ic}$
+\STATE ~~~ ~~~ ~~~ Generate clusters $l_1,...,l_k$, where $l_j=\{x_i|z_i=j\}$
+\STATE ~~~ ~~~ ~~~ For each cluster $l_j$, compute $\mu_j = \frac{1}{|l_j|}\sum_{x\in l_j} x$
+\STATE ~~~ Master collects $\mu$ for each worker and computes the objective
+\end{algorithmic}
+\end{algorithm}
+
+
