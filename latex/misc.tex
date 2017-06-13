@@ -102,7 +102,14 @@ It is a concave function with maximum uncertainty of $1$ bit occuring at $p=\fra
 \begin{equation}
     H(\lambda p_1 + (1-\lambda) p_2) \geq \lambda H(p_1) + (1-\lambda) H(p_2)
 \end{equation}
-Since $0\leq p(x) \leq 1$, we have $\log \frac{1}{p(x)} \geq 0$, and for a discrete $X$, the entropy is non-negative: $H(X)\geq 0$. We also note that entropy is independent of permutation or cyclical shifts of the support of our distribution, i.e. it only depends on the point masses $p(x)$.\\
+Since $0\leq p(x) \leq 1$, we have $\log \frac{1}{p(x)} \geq 0$, and for a discrete $X$, the entropy is non-negative: $H(X)\geq 0$. We can find an upper bound for entropy using the Jensen's inequality:
+\begin{eqnarray}
+    H(X) &=& \sum_{x \in \cal X} p(x)\log \frac{1}{p(x)} \\
+         &\leq& \log \sum_{x \in \cal X} p(x)\times \frac{1}{p(x)} \\
+         &=& \log \sum_{x \in \cal X} 1 \\
+         &=& \log |\cal X|
+\end{eqnarray}
+We also note that entropy is independent of permutation or cyclical shifts of the support of our distribution, i.e. it only depends on the point masses $p(x)$.\\
 
 The joint entropy of a pair of discrete random variables $X$ and $Y$ is defined as:
 \begin{equation}
@@ -129,6 +136,18 @@ where the inequality follows from the fact that conditioning reduces entropy. Fo
     &=& \frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}Tr\{\Sigma^{-1}\Sigma\} \\
     &=& \frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}d \log e = \frac{1}{2}\log\big[(2\pi e)^d|\Sigma|\big] 
 \end{eqnarray}
+In information theory, the analog of the law of large numbers is the Asymptotic Equipartition Property (AEP). The AEP states that:
+\begin{theorem}
+(AEP) If $X_1$,$X_2$,...,$X_n$ are iid $\sim p(x)$ then
+\begin{equation}
+    -\frac{1}{n} \log p(X_1, X_2,...,X_n) \rightarrow H(X) ~~~\mathrm{in~probability}
+\end{equation}
+\end{theorem}
+\textit{Proof}.
+\begin{equation}
+    -\frac{1}{n}\log p(X_1, X_2,...,X_n) = -\frac{1}{n}\sum_i \log p(X_i) \rightarrow -E[\log p(X)] = H(X)
+\end{equation}
+Thus, the probability $p(X_1,...,X_n)$ assigned to an observed sequence will be close to $2^{-nH(X)}$. This enables us to classify the set of all sequences into a typical set, where the sample entropy is close to the true entropy and the nontypical set that contains all other sequences. 
 
 \subsubsection{KL divergence}
 
@@ -180,6 +199,19 @@ Then for a fixed $x$, it suffices to show that
 \end{equation}
 where $\lambda_1 = \lambda$ and $\lambda_2 = 1-\lambda$, which is exactly the log-sum inequality.\\
 
+In order to find a distribution $q(x) \in Q$ that is closest to $p(x) \in P$, we can minimize $KL(q||p)$ with respect to $q(x)$ known as I-projection or information projection:
+\begin{equation}
+    (\mathrm{I-projection}): ~~~ q(x) = \arg \min_{q \in Q} KL(q||p)
+\end{equation}
+Since the KL divergence is not symmetric in its arguments, the above expression will give different behavior compared to minimizing $KL(p||q)$ known as M-projection or moment projection:
+\begin{equation}
+    (\mathrm{M-projection}): ~~~ q(x) = \arg \min_{q \in Q} KL(p||q)
+\end{equation}
+Both the I-projection and the M-projection are projections of a probability distribution $p(x)$ onto a set of distributions $Q$. For I-projection, $q(x)$ will typically under-estimate the support of $p(x)$ and will lock onto one of its modes. This is due to $q(x)=0$ whenever $p(x)=0$ to make sure KL divergence stays finite. For M-projection, $q(x)$ will typically over-estimate the support of $p(x)$ and will cover all of its modes. This is due to $q(x)>0$ whenever $p(x)>0$ to make sure KL divergence stays finite. The I-projection is useful in setting up information geometry because of the following inequality:
+\begin{equation}
+    KL(q||p) \geq KL(q||p^{\ast}) + KL(p^{\ast}||p)
+\end{equation}
+The inequality can be interpreted as information-geometric version of Pythagoras' triangle inequality theorem, where KL divergernce is viewed as squared distance in Euclidean space.\\
 If we are interested in measuring the distance between two multivariate Gaussian distributions with means $\mu_1$ and $\mu_2$ and covariances $\Sigma_1$ and $\Sigma_2$, the KL divergence can be computed in closed form:
 \begin{eqnarray}
     KL(p||q) &=& \int p(x) \log \frac{p(x)}{q(x)} = \int [\log p(x) - \log q(x)] p(x) dx \nonumber \\
