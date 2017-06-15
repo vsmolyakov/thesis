@@ -158,6 +158,146 @@ Model selection can be done by evaluating perplexity for different values of $K$
 
 \subsection{Stochastic Variational Inference}
 
-One limitation of LDA is that the number of topics is fixed ahead of time. A commonly used approach to finding the number of topics $K$ is cross-validation. However, for very large data-sets this approach may not be practical. We can address this issue with a Bayesian non-parametric topic model where the number of topics is learned from data: the Hierarchical Dirichlet Process (HDP) topic model.
+One limitation of LDA is that the number of topics is fixed ahead of time. A commonly used approach to finding the number of topics $K$ is cross-validation. However, for very large data-sets this approach may not be practical. We can address this issue with a Bayesian non-parametric topic model where the number of topics is learned from data: the Hierarchical Dirichlet Process (HDP) topic model.\\
 
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.25\textwidth, trim={10 10 10 10}]{figures/local_global_gm.png}
+    \caption{Graphical model with local and global latent variables.}
+    \label{fig:svi_gm}
+\end{figure}
 
+While tranditional algorithms require repeatedly analyzing the whole data set before updating the variational parameters, we focus on analyzing randomly sampled subsets. First, we derive the Stochastic Variational Inference (SVI) algorithm for a class of graphical models with global and local laten variables as shown in Figure \ref{fig:svi_gm}. The join distribution factorizes into a product of a global term $\beta$ and local term $z_n$:
+\begin{equation}
+    p(x,z,\beta|\alpha) = p(\beta|\alpha)\prod_{n=1}^{N}p(x_n,z_n|\beta)
+\end{equation}
+Our goal is to approximate the posterior distribution of the hidden variables given the observations $p(\beta,z|x)$. We use a variational distribution to approximate the posterior as measured by KL divergence. Variational inference minimizes KL divergence or alternatively maximizes the evidence lower bound (ELBO):
+\begin{eqnarray}
+    \log p(x) &=& \log \int p(x,z,\beta) dz d\beta \\
+              &=& \log \int p(x,z,\beta) \frac{q(z,\beta)}{q(z,\beta)} dz d\beta \\
+              &=& \log \bigg(E_q \bigg[\frac{p(x,z,\beta)}{q(z,\beta)} \bigg] \bigg) \\
+              &\geq& E_q[\log p(x,z,\beta)] - E_q[\log q(z,\beta)]\\
+              &=& L(q)
+\end{eqnarray}
+The ELBO contains two terms: the first term is the expected log joint $E_q[\log p(x,z,\beta)]$ and the second term is the entropy of the variational distribution $- E_q[\log q(z,\beta)]$. We restrict $q(z,\beta)$ to be in a tractable family of distributions in order to efficiently compute the expectations in the ELBO. We then find the member of the family that maximizes the ELBO and use the optimized distribution as a proxy for the posterior. Solving this maximization problem is equivalent to finding the member of the family that is closest in KL divergence to the posterior:
+\begin{eqnarray}
+    \min KL(q(z,\beta)||p(z,\beta|x)) &=& E_q[\log q(z,\beta)] - E_q[\log p(z,\beta|x)] \\
+    &=& E_q[\log q(z,\beta)] - E_q[\log p(x,z,\beta)] + \log p(x) \\
+    &=& -L(q) + \mathrm{const}
+\end{eqnarray}
+where $\log p(x)$ is replaces by a constant because it does not depend on $q$. The simplest variational family of distributions is the fully factored mean-field family. In this family, each hidden variable is independent and governed by its own parameter:
+\begin{equation}
+    q(z,\beta) = q(\beta|\lambda)\prod_{n=1}^{N}\prod_{j=1}^{J}q(z_{nj}|\phi_{nj})
+\end{equation}
+To specify the form of the distribution, we choose $q(\beta|\lambda)$ and $q(z_{nj}|\phi_{nj})$ to be in the exponential distribution with the natural parameters $\lambda$ and $\phi_{nj}$:
+\begin{eqnarray}
+   q(\beta|\lambda) &=& h(\beta)\exp\{\lambda^{T}t(\beta) - a_{g}(\lambda)\}\\
+   q(z_{nj}|\phi_{nj}) &=& h(z_{nj})\exp\{\phi_{nj}^{T}t(z_{nj} - a_{l}(\phi_{nj}))\}
+\end{eqnarray}
+The mean-field family has several computational advantages. For example the entropy term in the ELBO objective function decomposes:
+\begin{equation}
+   -E_q[\log q(z,\beta)] = -E_{\lambda}[\log q(\beta)] - \sum_{n=1}^{N}\sum_{j=1}^{J}E_{\phi_{nj}}[\log q(z_{nj})]
+\end{equation}
+In traditional mean-field variational inference, we maximize $L(q)$ with coordinate ascent: we iteratively optimize each variational parameter while holding the other parameters fixed. Given our assumptions that each conditional is an exponential family, we can optimize each coordinate in closed form. We first derive the coordinate update for the global parameter $\lambda$. Keeping only the terms of $L(q)$ that depend on $\lambda$, we get:
+\begin{eqnarray}
+    L(\lambda) &=& E_q[\log p(x,z,\beta)] - E_q[\log q(\beta)] + \mathrm{const} \\
+    &=& E_q[\log p(\beta|x,z)] - E_q[\log q(\beta)] + \mathrm{const}
+\end{eqnarray}
+where we used the factorization $p(x,z,\beta) = p(\beta|x,z)p(x,z)$ and absorbed $E_q[p(x,z)]$ into the constant that does not depend on $\lambda$. To derive the coordinate ascent update, we take the gradient \cite{SVI2013}:
+\begin{equation}
+   \nabla_{\lambda}L = \nabla_{\lambda}^{2}a_g(\lambda)(E_q[\eta_g(x,z,\alpha)] - \lambda) 
+\end{equation}
+We can set the gradient to zero by setting $\lambda = E_q[\eta_g(x,z,\alpha)]$. This sets the global variational parameter equal to the expected natural parameter of its complete conditional distribution. We now turn to the local parameters $\phi_{nj}$. The gradient is similar to the global case:
+\begin{equation}
+   \nabla_{\phi_{nj}}L = \nabla_{\phi_{nj}}^{2}a_{l}(\phi_{nj})(E_q[\eta_l(x_n,z_{n,-j},\beta)] - \phi_{nj})
+\end{equation}
+We can set the gradient to zero by choosing $\phi_{nj} = E_q[\eta_l(x_n,z_{n,-j},\beta)]$. The variational updates form the algorithm for coordinate ascent variational inference, iterating between updates of each local parameter and the global parameter. The full algorithm is described in Algorithm \ref{alg:svi_1} which is guaranteed to find a local optimum of the ELBO.\\
+
+\begin{algorithm}
+\caption{Coordinate Ascent SVI \cite{SVI2013}}
+\label{alg:svi_1}
+\begin{algorithmic}[1]
+\STATE Initialize $\lambda^{(0)}$ randomly
+\STATE \textbf{repeat}
+\STATE ~~~ \textbf{for} each local variational parameter $\phi_{nj}$ \textbf{do}
+\STATE ~~~ ~~~ Update $\phi_{nj}^{(t)} = E_{q^{(t-1)}}[\eta_{l,j}(x_n,z_{n,-j},\beta)]$
+\STATE ~~~ \textbf{end for}
+\STATE ~~~ Update the global variational parameters: $\lambda^{(t)} = E_{q^{(t)}}[\eta_g(z,x)]$
+\STATE \textbf{until} the ELBO converges
+\end{algorithmic}
+\end{algorithm}
+
+We now turn the Hierarchical Dirichlet Process (HDP) topic model. The HDP topic model couples a set of document-level DPs via a single top-level DP \cite{teh2005jasa}. The base distribution $H$ of the top-level DP is a symmetric Dirichlet over the vocabulary simplex. We draw once from this DP: $G_0 \sim DP(\omega, H)$. In the second level, we use $G_0$ as a base measure for a document level DP: $G_d \sim DP(\alpha, G_0)$. As a result, the global topics are shared between documents with different mixing proportions.
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.5\textwidth, trim={10 10 10 10}]{figures/hdp_svi_gm.png}
+    \caption{HDP graphical model for SVI inference.}
+    \label{fig:svi_gm2}
+\end{figure}
+
+Figure \ref{fig:svi_gm2} shows a graphical model for the HDP topic model. The generative process of the HDP topic model can be described as follows.
+\begin{enumerate}
+    \item Draw global topics, $\beta_k \sim \mathrm{Dir}(\eta)$
+    \item Draw mixing proportions, $\nu_k \sim \mathrm{Beta}(1,\omega)$
+    \item For each document $d$:
+    \begin{enumerate}
+        \item Draw document-level topic indices, $c_{di} \sim \mathrm{Mult}(\nu)$
+        \item Draw document-level mixing proportions, $\pi_{di} \sim \mathrm{Beta}(1,\alpha)$
+        \item For each word $n$:
+        \begin{enumerate}
+            \item Draw topic assignment $z_{dn} \sim \mathrm{Mult}(\pi_d)$
+            \item Draw word $w_n \sim \mathrm{Mult}(\beta_{c_{d,z_{dn}}})$
+        \end{enumerate}
+    \end{enumerate}
+\end{enumerate}
+
+In order to implement an infinite number of topics at corpus and document levels we need to truncate our representation to $K$ topics at the corpus level and $T$ topics at the document level. This ways we are optimizing a finite number of variational parameters. We can write down the joint variational family distribution as:
+\begin{equation}
+    q(\beta,\nu,z,\pi) = \bigg(\prod_{k=1}^{K}q(\beta_k|\lambda_k)q(\nu_k|a_k)\bigg)\bigg(\prod_{d=1}^{D}\prod_{i=1}^{T}q(c_{di}|\zeta_{di})q(\pi_{di}|\gamma_{di})\prod_{n=1}^{N}q(z_{dn}|\phi_{dn}) \bigg)
+\end{equation}
+The Stochastic Variational Inference (SVI) algorithm is summarized in Algorithm \ref{alg:svi_2}.
+
+\begin{algorithm}
+\caption{Stochastic Variational Inference for HDP \cite{SVI2013}}
+\label{alg:svi_2}
+\begin{algorithmic}[1]
+\STATE Initialize $\lambda^{(0)}$ randomly. Set $a^{(0)}=1$ and $b^{(0)}=\omega$
+\STATE Set the step-size schedule $\rho_t$
+\STATE \textbf{repeat}
+\STATE ~~~ Sample a document $w_d$ uniformly from the dataset
+\STATE ~~~ For $i \in \{1,...,T\}$, $k \in \{1,...,K\}$: $\zeta_{di}^{k} \propto \exp \{\sum_{n=1}^{N}E[\log \beta_{k,w_{dn}}]\}$
+\STATE ~~~ For $n \in \{1,...,N\}$, $i \in \{1,...,T \}$: $\phi_{dn}^{i} \propto \exp\{\sum_{k=1}^{K}\zeta_{di}^{k}E[\log\beta_{k,w_{dn}}]\}$
+\STATE ~~~ \textbf{repeat}
+\STATE ~~~ ~~~ For $i \in \{1,...,T\}$ set \\
+~~~ ~~~ ~~~ ~~~ $\gamma_{di}^{(1)} = 1 + \sum_{n=1}^{N}\phi_{dn}^{i}$\\
+~~~ ~~~ ~~~ ~~~ $\gamma_{di}^{(2)} = \alpha + \sum_{n=1}^{N}\sum_{j=i+1}^{T}\phi_{dn}^{j}$\\
+~~~ ~~~ ~~~ ~~~ $\zeta_{di}^{k} \propto \exp \{E[\log \sigma_k(V)]+\sum_{n=1}^{N}\phi_{dn}^{i}E[\log \beta_{k,w_{dn}}] \}$, $k \in \{1,...,K\}$
+\STATE ~~ ~~~ For $n \in \{1,...,N\}$ set \\
+~~~ ~~~ ~~~ ~~~ $\phi_{dn}^{i} \propto \exp \{E[\log \sigma_i(\pi_d)]+\sum_{k=1}^{K}\zeta_{di}^{k}E[\log \beta_{k,w_{dn}}] \}$, $i \in \{1,...,T\}$
+\STATE ~~~ \textbf{until} local parameters converge
+\STATE ~~~ For $k \in \{1,...,K\}$ set intermediate topics:\\
+~~~ ~~~ ~~~ ~~~ $\hat{\lambda}_{kv} = \eta + D\sum_{i=1}^{T}\zeta_{di}^{k}\sum_{n=1}^{N}\phi_{dn}^{i}w_{dn}$\\
+~~~ ~~~ ~~~ ~~~ $\hat{a}_k = 1 + D\sum_{i=1}^{T} \zeta_{di}^{k}$\\
+~~~ ~~~ ~~~ ~~~ $\hat{b}_k = \omega + D\sum_{i=1}^{T}\sum_{l=k+1}^{K}\zeta_{di}^{l}$
+\STATE ~~~ Set \\
+~~~ ~~~ ~~~ ~~~ $\lambda^{(t)} = (1-\rho_t)\lambda^{(t-1)} + \rho_t\hat{\lambda}$\\
+~~~ ~~~ ~~~ ~~~ $a^{(t)} = (1-\rho_t)a^{(t-1)} + \rho_t\hat{a}$\\
+~~~ ~~~ ~~~ ~~~ $b^{(t)} = (1-\rho_t)b^{(t-1)} + \rho_t\hat{b}$
+\STATE \textbf{until} end of documents
+\end{algorithmic}
+\end{algorithm}
+where the expectations used in Algorithm \ref{alg:svi_2} are computed as follows:
+\begin{eqnarray}
+    E[\log \beta_{kv}] &=& \Psi(\lambda_{kv}) - \Psi(\sum_{v^{\prime}}\lambda_{kv^{\prime}})\\
+    E[\log \sigma_k(V)] &=& \Psi(a_k) - \Psi(a_k+b_k) + \sum_{l=1}^{k-1}[\Psi(b_l)-\Psi(a_l+b_l)]
+\end{eqnarray}
+
+The on-line variational inference algorithm for Hierarchical Dirichlet Process was used to fit a topic model on the 20newsgroups dataset. The dataset consists of $11,314$ documents and over $100K$ unique tokens. Standard text pre-processing was used including tokenization, stop-word removal and stemming. A compressed dictionary of $4K$ words was constructed by filtering out tokens that appear in less than $5$ documents and more than $50\%$ of the corpus. The top-level truncation was set to $T=20$ topics and the second level truncation was set to $K=8$ topics. The concentration parameters were chosen as $\gamma = 1.0$ at the top-level and $\alpha=0.1$ at the group level to yield a broad range of shared topics that are concentrated at the group level. Figure \ref{fig:hdp_topics} shows a sample of the global level topics inferred by online variational HDP algorithm. We can find topics about autos, politics and for sale items that correspond to the target labels of the 20newsgroups dataset.
+
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/hdp_topics.png}
+    \caption{Sample of HDP topics inferred using online variational bayes algorithm on 20newsgroups dataset.}
+    \label{fig:hdp_topics}
+\end{figure}
