@@ -275,15 +275,28 @@ Therefore,
 \end{equation}
 
 
+\subsection{Imbalanced Learning}
 
+Most classification algorithms will only perform optimally when the number of samples in each class is roughly the same. Highly skewed datasets where the minority class is outnumbered by one or more classes commonly occur in fraud detection, medical diagnosis and computational biology. One way of addressing this issue is by re-sampling the dataset to offset the imbalance and arrive at a more robust and accurate decision boundary. Re-sampling techniques can be broadly divided into four categories: undersampling the majority class, over-sampling the minority class, combining over and under sampling, and creating ensemble of balanced datasets \cite{He2009}.\\
 
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/undersampling.png}
+    \caption{Four undersampling strategies: random, cluster centroids, Tomek links, one-sided selection.}
+    \label{fig:undersampling}
+\end{figure}
 
+\textit{Undersampling strategies}. Undersampling methods remove data from the majority class of the original dataset as shown in Figure \ref{fig:undersampling}. Random Under Sampler simply removes data points from the majority class uniformly at random. Cluster Centroids is a method that replaces cluster of samples by the cluster centroid of a K-means algorithm, where the number of clusters is set by the level of undersampling. Tomek links remove unwanted overlap between classes where Tomek links are removed until all minimally distanced nearest neighbor pairs are of the same class. A Tomek link is defined as follows: given an instance pair $(x_i, x_j)$, where $x_i \in S_{min}$, $x_j \in S_{maj}$ and $d(x_i,x_j)$ is the distance between $x_i$ and $x_j$, then the $(x_i, x_j)$ pair is called a Tomek link if there's no instance $x_k$ such that $d(x_i, x_k) < d(x_i, x_j)$ or $d(x_j, x_k) < d(x_i, x_j)$. In this way, if two instances form a Tomek link then either one of these instances is noise or both are near a border. Therefore one can use Tomek links to clean up overlap between classes. By removing overlapping examples, one can establish well-defined clusters in the training set and lead to improved classification performance. The One Sided Selection (OSS) method selects a representative subset of the majority class $E$ and combines it with the set of all minority examples $S_{min}$ to form $N = \{E\cup S_{min}\}$. The reduced set $N$ is further processed to remove all majority class Tomek links.\\  
 
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/oversampling.png}
+    \caption{Three oversampling strategies: random, SMOTE, ADASYN.}
+    \label{fig:oversampling}
+\end{figure}
 
+\textit{Oversampling strategies}. Oversampling methods append data to the minority class of the original dataset as shown in Figure \ref{fig:oversampling}. Random Over Sampler simply adds data points to the minority class uniformly at random. Synthetic Minority Oversampling Technique (SMOTE) generates synthetic examples by finding $K$ nearest neighbors in the feature space and generating a new data point along the line segments joining any of the $K$ minority class nearest neighbors. Synthetic samples are generated in the following way: take the difference between the feature vector (sample) under consideration and its nearest neighbor, multiply this difference by a random number between $0$ and $1$ and add it to the feature vector under consideration thus augmenting the dataset with a new data point. Adaptive Synthetic Sampling (ADASYN) uses a weighted distribution for different minority class examples according to their level of difficulty in learning, where more synthetic data is generated for minority class examples that are harder to learn. As a result, the ADASYN approach improves learning of imbalanced dataset in two ways: reducing the bias introduced by class imbalance and adaptively shifting the classification decision boundary toward the difficult examples.\\ 
 
-
-
-
-
+It's possible to combine over-sampling and under-sampling techniques into a hybrid strategy. Common examples include SMOTE and Tomek links or SMOTE and Edited Nearest Neighbors (ENN). Additional ways of learning on imbalanced datasets include weighing training instances, introducing different misclassification costs for positive and negative examples and bootstrapping. 
 
 

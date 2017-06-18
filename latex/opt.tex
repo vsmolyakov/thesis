@@ -41,7 +41,7 @@ Figure \ref{fig:sim_annealing_merged} shows the objective $f(x)$ at two differen
 
 Machine learning algorithms frequenty require careful tuning of hyperparameters. Often exhaustive and computationally expensive methods such as grid search cross validation are used to find model parameters that optimize a suitable performance objective. An alternative to grid search is randomized parameter optimization that samples parameter settings from a distribution over possible parameter values. This has two main benefits over the exhaustive search: the number of iterations can be chosen independent of the number of parameters and adding parameters that do not influence performance does not decrease efficiency. Rather than exploring the parameter space randomly (according to a chosen distribution), it would be great to adapt an active learning approach that selects parameter values in a way that reduces uncertainty and provides a balance between exploration and exploitation. Bayesian optimization provides an automated Bayesian framework by utilizing Gaussian Processes (GPs) to model algorithm's generalization performance \cite{snoek2012}.\\
 
-Bayesian optimization assumes that a suitable performance function was sampled from a Gaussian Process and maintains a posterior distribution for this function as observations are made. To choose which hyperparameters to explore next, one can optimize the Expected Improvement (EI) over the current best result or the Gaussian process Upper Confidence Bound (UCB). EI and UCB have been shown to be efficient in the number of function evaluations required to find the global optimum of multi-modal black-box functions. Bayesian optimization uses all of the information available from previous evaluations of the objective function as opposed to relying on local gradient and Hessian approximations. This results in an automated procedure that can find an optimum of non-convex functions with relatively few evaluations, at the cost of performing more computation to determine the next point to try. This is particularly useful when evaluations are expensive to perform such as in selecting hyperparameters for deep neural networks.\\
+Bayesian optimization assumes that a suitable performance function was sampled from a Gaussian Process and maintains a posterior distribution for this function as observations are made: $f(x)\sim \mathrm{GP}(m(x),\kappa(x,x^{\prime}))$. To choose which hyperparameters to explore next, one can optimize the Expected Improvement (EI) over the current best result or the Gaussian process Upper Confidence Bound (UCB). EI and UCB have been shown to be efficient in the number of function evaluations required to find the global optimum of multi-modal black-box functions. Bayesian optimization uses all of the information available from previous evaluations of the objective function as opposed to relying on local gradient and Hessian approximations. This results in an automated procedure that can find an optimum of non-convex functions with relatively few evaluations, at the cost of performing more computation to determine the next point to try. This is particularly useful when evaluations are expensive to perform such as in selecting hyperparameters for deep neural networks.\\
 
 To determine what point should be evaluated next, we need to choose and acquisition function which is used to construct a utility function from the GP posterior. In general, the acquisition function depends on previous observations as well as GP hyperparameters that we denote as $a(x;\{x_n,y_n\},\theta)$, then $x_{next} = \arg \max_x a(x)$. Let $\mu(x;\{x_n,y_n\},\theta)$ be the predictive GP mean function, $\sigma^{2}(x;\{x_n,y_n\},\theta)$ be the predictive GP variance function and $\Phi(x)$ be the cumulative distribution function of the standard normal. Then we can define the following acquisition functions.\\
 
@@ -59,7 +59,29 @@ To determine what point should be evaluated next, we need to choose and acquisit
 \begin{equation}
     a_{UCB}(x;\{x_n,y_n\},\theta) = \mu(x;\{x_n,y_n\},\theta) - \kappa \sigma(x;\{x_n,y_n\},\theta)
 \end{equation}
-where $\kappa$ is a tunable acquisition parameter to balance exploration and exploitation.\\
+where $\kappa$ is a tunable acquisition parameter to balance exploration and exploitation. The optima of acquisition functions are located where the uncertainty in GP posterior is large (exploration) and/or where the GP prediction is high (exploitation). Since acquisition functions have analytical forms that are simple to evaluate, they are easier to optimize then the original objective function.\\
+
+An important practical consideration for Bayesian optimization is an appropriate choice of GP kernel and its associated hyperparameters. Squared exponential kernel is often a default choice for Gaussian process regression. However, sample functions with this kernel are too smooth for practical optimization problems. Instead the following ARD Matern $5/2$ kernel is proposed:
+\begin{eqnarray}
+    K_{M52}(x,x^{\prime}) &=& \theta_0\bigg(1+\sqrt{5r^2(x,x^{\prime})}+\frac{5}{3}r^2(x,x^{\prime}) \bigg)\exp \{-\sqrt{5r^2(x,x^{\prime})}\}\\
+    r^2(x,x^{\prime}) &=& \sum_{d=1}^{D}(x_d - x^{\prime}_d)^{2}/\theta_{d}^{2}
+\end{eqnarray}
+This kernel results in sample functions that are twice-differentiable without requiring the smoothness of the squared exponential kernel. The associated kernel hyperparameters are $D$ length scales $\theta_{1:D}$, the covariance amplitude $\theta_0$, the observation noise $\nu$ and a constant mean $m$. An additional assumption made by GP regression is that the underlying process is stationary, i.e. we can re-write the kernel $k(x,x^{\prime})$ as a function of $x-x^{\prime}$. Intuitively, a function whose length scale does not change throughout the input space will be modelled well by a GP with a stationary kernel.\\ 
+
+Bayesian Optimization algorithm is summarized in Algorithm \ref{alg:bayes_opt}.
+\begin{algorithm}
+\caption{Bayesian Optimization}
+\label{alg:bayes_opt}
+\begin{algorithmic}[1]
+\STATE \textbf{for} $n=1,2,...$ \textbf{do}
+\STATE ~~~ select new $x_{n+1}$ by optimizing acquisition function $\alpha$\\
+~~~ ~~~ $x_{n+1} = \arg \max_x \alpha(x;D_n,\theta)$
+\STATE ~~~ query objective function to obtain $y_{n+1} = f(x_{n+1})$
+\STATE ~~~ augment data $D_{n+1} = \{D_n,(x_{n+1},y_{n+1})\}$
+\STATE ~~~ update GP posterior and acquisition function 
+\STATE \textbf{end for}  
+\end{algorithmic}
+\end{algorithm}
 
 
 \begin{figure}[tbhp]
@@ -69,8 +91,7 @@ where $\kappa$ is a tunable acquisition parameter to balance exploration and exp
     \label{fig:bayes_opt}
 \end{figure}
 
-Figure \ref{fig:bayes_opt} shows Baeysian optimization applied to SVM and Random Forest. F1 score was used as performance objective function for a classification task. The figure on the left shows Bayesian optimization of F1 score as a function of the gamma parameter of the SVM RBF kernel: $K(x,x^{\prime}) = \exp\{-\gamma ||x-x^{\prime}||^{2}\}$. We can see that after only 7 iterations we have discovered the gamma parameter that gives maximum F1 score. The peak of EI utility function at the bottom tells us which experiment to perform next. The figure on the right shows Bayesian optimization of F1 score as a function of maximum depth and the number of estimators of a Random Forest classifier. From the heatmap, we can tell that the maximum F1 score is achieved for $158$ estimators with depth equal to $10$.    
-
+Figure \ref{fig:bayes_opt} shows Baeysian optimization applied to SVM and Random Forest. F1 score was used as performance objective function for a classification task. The figure on the left shows Bayesian optimization of F1 score as a function of the gamma parameter of the SVM RBF kernel: $K(x,x^{\prime}) = \exp\{-\gamma ||x-x^{\prime}||^{2}\}$. We can see that after only 7 iterations we have discovered the gamma parameter that gives the maximum F1 score. The peak of EI utility function at the bottom tells us which experiment to perform next. The figure on the right shows Bayesian optimization of F1 score as a function of maximum depth and the number of estimators of a Random Forest classifier. From the heatmap, we can tell that the maximum F1 score is achieved for $158$ estimators with depth equal to $10$.    
 
 
 
