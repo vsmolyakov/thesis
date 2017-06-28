@@ -94,8 +94,83 @@ Bayesian Optimization algorithm is summarized in Algorithm \ref{alg:bayes_opt}.
 Figure \ref{fig:bayes_opt} shows Baeysian optimization applied to SVM and Random Forest. F1 score was used as performance objective function for a classification task. The figure on the left shows Bayesian optimization of F1 score as a function of the gamma parameter of the SVM RBF kernel: $K(x,x^{\prime}) = \exp\{-\gamma ||x-x^{\prime}||^{2}\}$. We can see that after only 7 iterations we have discovered the gamma parameter that gives the maximum F1 score. The peak of EI utility function at the bottom tells us which experiment to perform next. The figure on the right shows Bayesian optimization of F1 score as a function of maximum depth and the number of estimators of a Random Forest classifier. From the heatmap, we can tell that the maximum F1 score is achieved for $158$ estimators with depth equal to $10$.    
 
 
+\subsection{Active Learning}
+
+The key idea behind active learning is that a machine learning algorithm can achieve greater accuracy with fewer training labels if it is allowed to choose the data from which it learns. Active learning is well motivated in many modern machine learning problems where unlabeled data may be abundant but labels are expensive to obtain. Active learning is sometimes called query learning or optimal experimental design because an active learner poses queries in the form of unlabelled data instances to be labeled by an oracle. In this way, the active learner seeks to achieve high accuracy using as few labeled instances as possible \cite{Settles2009}.\\
+
+We focus on \textit{pool-based sampling} that assumes that there is a small set of labeled data $L$ and a large pool of unlabelled data $U$. Queries are selectively drawn from the pool according to an informativeness measure. Pool based methods rank the entire collection of unlabelled data to select the best query. Therefore, for very larget data-sets, stream-based sampling maybe more appropriate where the data is scanned sequentially and query decisions are evaluated individually.\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/active_learning_logreg.png}
+    \caption{Random Subsampling vs Uncertainty Sampling}
+    \label{fig:al_logreg}
+\end{figure}
+
+Figure \ref{fig:al_logreg} shows an example of pool-based active learning based on binary classification of a synthetic dataset with two balanced classes using Logistic Regression (LR). On the left, we can see the LR decision boundary as a result of training on a randomly subsampled set of $30$ labels that achieves a classification accuracy of $90\%$ on held out data. On the right, we can see the LR decision boundary as a result of training on $30$ queries selected by uncertainty sampling based on entropy. Uncertainty sampling achieves a higher classification accuracy of $92.5\%$ on the held out set.   
 
 
+\subsubsection{Query Strategies}
+
+\textit{Uncertainty Sampling.} One of the simplest and most commonly used query framework is uncertainty sampling. In this framework, an active learner queries the label about which it is least certain. For example, in binary logistic regression, uncertainty sampling queries points near the boundary where the probability of being positive is close to $0.5$. For multi-class problems, uncertainty sampling can query points that are least confident:
+\begin{equation}
+    x_{LC}^{\ast} = \arg \max_x 1 - P_{\theta}(\hat{y}|x)
+\end{equation}
+where $\hat{y} \in \{1,...,K\}$ is the class label with the highest posterior probability under the model $\theta$. The criterion for the least confident strategy only considers information about the most probable label. We can use max margin sampling to preserve information about the remaining label distribution:
+\begin{equation}
+    x_{M}^{\ast} = \arg \min_x P_{\theta}(\hat{y}_1|x) - P_{\theta}(\hat{y}_2|x)
+\end{equation}
+where $\hat{y}_1$ and $\hat{y}_2$ are the first and second most probable class labels under the model, respectively. Intuitively, instances with large margins are easy to classify. Thus, points with small margins are ambiguous and knowing their labels would help the model to more effectively discriminate between them. However, for multi-class problems with very large label sets, the margin strategy still ignores much of the output distribution for the remaining classes. A more general uncertainty sampling strategy is based on entropy:
+\begin{equation}
+    x_{H}^{\ast} = \arg \max_x -\sum_i P_{\theta}(y_i|x)\log P_{\theta}(y_i|x)
+\end{equation}
+By learning labels that have highest entropy we can reduce label uncertainty. Uncertainty sampling also works for regression problems, in which case the learner queries the point with highest output variance in its prediction.\\
+
+\textit{Query by Committee.} Another query selection framework is the Query By Committee (QBC) algorithm that involves maintaining a committee $C = \{\theta^{(1)},...,\theta^{(C)}\}$ of models which are all trained on the current labeled set $L$ but represent competing hypotheses. Each committee member is then allowed to vote on the labelings of query candidates and the most informative query is considered to be an instance about which they most disagree. The objective of QBC is to minimize a set of hypotheses that are consistent with the current labeled training data $L$. For measuring the level of disagreement two main approaches have been proposed \cite{Settles2009}: the vote entropy and KL divergence. The vote entropy is defined as follows:
+\begin{equation}
+    x_{VE}^{\ast} = \arg \max_x - \sum_i \frac{V(y_i)}{C} \log \frac{V(y_i)}{C}
+\end{equation}
+where $y_i \in \{1,...,K\}$ is the class label, $V(y_i)$ is the number of votes that a label received from the committee members and $C$ is the size of the committee. The KL divergence for QBC voting is defined as follows:
+\begin{eqnarray}
+    x_{KL}^{\ast} &=& \arg \max_x \frac{1}{C} \sum_{c=1}^{C} KL(P_{\theta^{(c)}}||P_C)\\
+    KL(P_{\theta^{(c)}}||P_C) &=& \sum_i P_{\theta^{(c)}}(y_i|x) \log \frac{P_{\theta^{(c)}}(y_i|x)}{P_C(y_i|x)}\\
+    P_C(y_i|x) &=& \frac{1}{C}\sum_{c=1}^{C}P_{\theta^{(c)}}(y_i|x)
+\end{eqnarray}
+where $\theta^{(c)}$ represents a member model of the committee and $P_C(y_i|x)$ is the consensus probability that $y_i$ is the correct label. The KL divergence metric considers the most informative query to be the one with the largest average difference between the label distributions of any one committee member and the consensus distribution.\\
+
+\textit{Variance Reduction}. We can reduce the generalization error by minimizing output variance. Consider a regression problem for which the learning objective is to minimize the mean squared error. Let $\bar{\theta} = E[\hat{\theta}]$ be the expected value of the parameter estimate $\hat{\theta}$ and let $\theta^{\ast}$ be the ground truth, then
+\begin{eqnarray}
+   \mathrm{MSE} &=& E\bigg[(\hat{\theta} - \theta^{\ast})^{2} \bigg]  = E\bigg[\big[(\hat{\theta} - \bar{\theta})+(\bar{\theta} - \theta^{\ast}) \big]^{2} \bigg] \\
+                &=& E\bigg[(\hat{\theta} - \bar{\theta})^{2} \bigg] + 2(\bar{\theta}-\theta^{\ast})E\bigg[\hat{\theta}-\bar{\theta}\bigg] + (\bar{\theta}-\theta^{\ast})^{2} \\
+                &=& E\bigg[(\hat{\theta} - \bar{\theta})^{2} \bigg] +  (\bar{\theta}-\theta^{\ast})^{2} \\
+                &=& \mathrm{VAR}[\hat{\theta}] + \mathrm{bias}^{2}(\hat{\theta})
+\end{eqnarray}
+This is called the \textbf{bias-variance tradeoff}. Thus, it is possible to achieve lower MSE with a biased estimator as long as it reduces the variance. A natural question is how low can the variance be? The answer is given by the Cramer-Rao lower bound that provides a lower bound on the variance of any unbiased estimator.
+\begin{theorem}
+(Cramer-Rao Lower Bound) Assuming $p(x|\theta)$ satisfies the regularity condition, the variance of any unbiased estimator $\hat{\theta}$ satisfies:
+\begin{equation}
+    \mathrm{VAR}(\hat{\theta}) \geq \frac{1}{-E\big[\frac{\partial^{2} \log p(x|\theta)}{\partial \theta^{2}} \big]} = \frac{1}{I(\theta)}
+\end{equation}
+where $I(\theta)$ is the Fisher information matrix. 
+\end{theorem}
+Thus, the Minimum Variance Unbiased (MVU) estimator achieves the minimum variance equal to the inverse of the Fisher information matrix. To minimize variance of parameter estimates, an active learner should select data that maximizes its Fisher information. For multi-variate models with $K$ parameters, Fisher information takes the form of a $K\times K$ matrix:
+\begin{equation}
+    [I(\theta)]_{ij} = -E \bigg[\frac{\partial^{2}\log p(x|\theta)}{\partial \theta_i \partial \theta_j} \bigg]
+\end{equation}
+As a result, there are several options for minimizing the inverse information matrix: A-optimality minimizes the trace: $Tr(I^{-1}(\theta))$, D-optimality minimizes the determinant: $|I^{-1}(\theta)|$ and E-optimality minimizes the maximum eigenvalue: $\lambda_{max}[I^{-1}(\theta)]$.\\
+
+However, there are some computational disadvantages to the variance reduction methods. Estimating output variance requires inverting a $K\times K$ matrix for each unlabeled instance, resulting in a time complexity of $\mathcal{O}(UK^{3})$, where $U$ is the size of the query pool. As a result variance reduction methods are empirically slower than simpler query strategies like uncertainty sampling.\\  
+
+Active learning and \textit{semi-supervised learning} both try to make the most of unlabeled data. For example, a basic semi-supervised technique is self-training in which the learner is first trained with a small amount of labeled data and then used to classify the unlabeled data. The most confident unlabeled instances together with their predicted labels are added to the training set and the process repeats.\\ 
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/active_learning_merged.png}
+    \caption{Active Learning: Uncertainty Sampling and Query By Committee.}
+    \label{fig:al_merged}
+\end{figure}
+
+Figure \ref{fig:al_merged} compares $3$ uncertainty sampling techniques: least confident, max margin and entropy with a random subsampling baseline on 20 newsgroups dataset classified with Logistic Regression. All three methods achieve higher accuracy in comparison to baseline that highlights the benefit of active learning. On the right, we can see the performance of Query By Committee strategy applied to MNIST dataset. The committee consists of $5$ instances of Logistic Regression. Two methods are compared against the random subsampling baseline: vote entropy and average KL divergence. We can see that average KL divergence achieves highest classification accuracy. All experiments were repeated $10$ times.  
 
 
 

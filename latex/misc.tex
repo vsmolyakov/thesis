@@ -300,51 +300,6 @@ Most classification algorithms will only perform optimally when the number of sa
 It's possible to combine over-sampling and under-sampling techniques into a hybrid strategy. Common examples include SMOTE and Tomek links or SMOTE and Edited Nearest Neighbors (ENN). Additional ways of learning on imbalanced datasets include weighing training instances, introducing different misclassification costs for positive and negative examples and bootstrapping. 
 
 
-\subsection{Active Learning}
-
-The key idea behind active learning is that a machine learning algorithm can achieve greater accuracy with fewer training labels if it is allowed to choose the data from which it learns. Active learning is well motivated in many modern machine learning problems where unlabeled data may be abundant but labels are expensive to obtain. Active learning is sometimes called query learning or optimal experimental design because an active learner poses queries in the form of unlabelled data instances to be labeled by an oracle. In this way, the active learner seeks to achieve high accuracy using as few labeled instances as possible \cite{Settles2009}.\\
-
-We focus on \textit{pool-based sampling} that assumes that there is a small set of labeled data $L$ and a larget pool unlabelled data $U$. Queries are selectively drawn from the pool according to an informativeness measure. Pool based methods rank the entire collection of unlabelled data to select the best query. Therefore for very larget data-sets, stream-based sampling maybe more appropriate where the data is scanned sequentially and query decisions are evaluated individually.\\
-
-\subsubsection{Query Strategies}
-
-\textit{Uncertainty Sampling.} One of the simplest and most commonly used query framework is uncertainty sampling. In this framework, an active learner queries the label about which it is least certain. For example, in binary logistic regression, uncertainty sampling queries points near the boundary where the probability of being positive is close to $0.5$. For multi-class problems, uncertainty sampling can query points that are least confident:
-\begin{equation}
-    x_{LC}^{\ast} = \arg \max_x 1 - P_{\theta}(\hat{y}|x)
-\end{equation}
-where $\hat{y} \in \{1,...,K\}$ is the class label with the highest posterior probability under the model $\theta$. A more general uncertainty sampling strategy is based on entropy:
-\begin{equation}
-    x_{H}^{\ast} = \arg \max_x -\sum_i P_{\theta}(y_i|x)\log P_{\theta}(y_i|x)
-\end{equation}
-By learning labels that have highest entropy we can reduce the label uncertainty. Uncertainty sampling also works for regression problems, in which case the learner queries the point with highest output variance in its prediction.\\
-
-\textit{Query by Committee.} Another query selection framework is the Query By Committee (QBC) algorithm that involves maintaining a committee $C = \{\theta^{(1)},...,\theta^{(C)}\}$ of models which are all trained on the current labeled set $L$ but represent competing hypotheses. Each committee member is then allowed to vote on the labelings of query candidates and the most informative query is considered to be an instance about which they most disagree. The objective of QBC is to minimize a set of hypotheses that are consistent with the current labeled training data $L$. For measuring the level of disagreement two main approaches have been proposed: the vote entropy and KL divergence. The vote entropy is defined as follows:
-\begin{equation}
-    x_{VE}^{\ast} = \arg \max_x - \sum_i \frac{V(y_i)}{C} \log \frac{V(y_i)}{C}
-\end{equation}
-where $y_i \in \{1,...,K\}$ is the class label, $V(y_i)$ is the number of votes that a label received from the committee members and $C$ is the size of the committee. The KL divergence for QBC voting is defined as follows:
-\begin{eqnarray}
-    x_{KL}^{\ast} &=& \arg \max_x \frac{1}{C} \sum_{c=1}^{C} KL(P_{\theta^{(c)}}||P_C)\\
-    KL(P_{\theta^{(c)}}||P_C) &=& \sum_i P_{\theta^{(c)}}(y_i|x) \log \frac{P_{\theta^{(c)}}(y_i|x)}{P_C(y_i|x)}\\
-    P_C(y_i|x) &=& \frac{1}{C}\sum_{c=1}^{C}P_{\theta^{(c)}}(y_i|x)
-\end{eqnarray}
-where $\theta^{(c)}$ represents a member model of the committee and $P_C(y_i|x)$ is the consensus probability that $y_i$ is the correct label. The KL divergence metric considers the most informative query to be the one with the largest average difference between the label distributions of any one committee member and the consensus distribution.\\
-
-%\textit{Variance Reduction}. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
