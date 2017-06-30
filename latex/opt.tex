@@ -173,6 +173,67 @@ Active learning and \textit{semi-supervised learning} both try to make the most 
 Figure \ref{fig:al_merged} compares $3$ uncertainty sampling techniques: least confident, max margin and entropy with a random subsampling baseline on 20 newsgroups dataset classified with Logistic Regression. All three methods achieve higher accuracy in comparison to baseline that highlights the benefit of active learning. On the right, we can see the performance of Query By Committee strategy applied to MNIST dataset. The committee consists of $5$ instances of Logistic Regression. Two methods are compared against the random subsampling baseline: vote entropy and average KL divergence. We can see that average KL divergence achieves highest classification accuracy. All experiments were repeated $10$ times.  
 
 
+\subsection{Submodular Optimization}
+
+Many observation selection problems satisfy an intuitive \textbf{diminishing returns} property: adding an observation helps more if we made few observations so far, and helps less if we already made a lot of observations. From a sensing perspective, combining two sets of information has less gain than the sum of information gains of the individual sets. This concept is formalized by the property of submodularity.\\
+
+Submodularity is a property of \textit{set functions} $f: 2^{V} \rightarrow \mathbb{R}$ that assign each subset $S \subseteq V$ a value $f(S)$. $F$ is called \textit{submodular} if for all $A, B \subseteq V$ it holds that
+\begin{equation}
+    F(A) + F(B) \geq F(A \cup B) - F(A \cap B)
+\end{equation}
+Note that if $F$ is non-negative ($F(A)\geq 0$ for all $A$) submodularity implies subadditivity: $f(A \cup B) \leq f(A) + f(B)$. An alternative definition of submodular functions is the following. A set function is sub-modular iff for all $A \subseteq B \subseteq V$ and $s \in V \setminus B$, it holds that
+\begin{equation}
+    F(A \cup \{s\}) - F(A) \geq F(B \cup \{s\}) - F(B) 
+\end{equation}
+We can usually check more easily for monotonicity and submodularity of a function via its incremental definition, where the increment function $f(A|B)$ is defined as $f(A|B) = f(A \cup B) - f(B)$. Thus, for a single element $\{e\} \in V \setminus B$ and $A \subseteq B \subseteq V$, we can define sub-modularity as:
+\begin{equation}
+    f(e|A) \geq f(e|B)
+\end{equation}
+An important subclass of submodular functions are those which are \textit{monotone} where enlarging the argument set cannot cause the function to decrease. A function $f: 2^{V}\rightarrow \mathbb{R}$ is monotone if for every $A \subseteq B \subseteq V$, we have $f(A) \leq f(B)$.
+
+Submodularity is closed under the operations of non-negative addition, restriction and conditioning. 
+\begin{theorem}
+(Submodularity is closed under conic combination). Given submodular functions $f_1,f_2,...,f_n$ and $\alpha_i \geq 0$, their conic combination (non-negative addition) is submodular.
+\begin{equation}
+    f(A) = \sum_{i=1}^{n} \alpha_i f_i(A)
+\end{equation}
+\end{theorem}
+\textit{Proof}. Since every function $f_i$ is submodular and $\alpha_i \geq 0$, we have for $A \subseteq B$:
+\begin{equation}
+    f_i(j|A) \geq f_i(j|B) \Rightarrow \sum_{i=1}^{n}\alpha_i f_i(j|A)\geq \sum_{i=1}^{n}\alpha_i f_i(j|B) \Rightarrow f(j|A) \geq f(j|B)
+\end{equation}
+
+\begin{theorem}
+(Entropy is submodular). Let $V$ be the index set of a set of random variables, then the following function is submodular:
+\begin{equation}
+    f(A) = H(X_A) = - \sum_{X_A} p(X_A)\log p(X_A)
+\end{equation}
+\end{theorem}
+\textit{Proof}. For $A \subseteq B \subseteq V$ and $e \in V \setminus B$, we have:
+\begin{eqnarray}
+    F(A\cup {e}) - F(A) &=& H(X_A,X_e) - H(X_A) = H(X_e|X_A) \\
+                        &\geq& H(X_e|X_A, X_B) = H(X_e|X_B) =  H(X_B,X_e) - H(X_B) \\
+                        &=& F(B\cup {e}) - F(B)
+\end{eqnarray}
+where the inequality is due to the fact that conditioning reduces entropy. 
+
+\begin{theorem}
+(Mutual Information is submodular). MI is a submodular function if observed variables are conditionally independent given the latent state. 
+\end{theorem}
+\textit{Proof}. MI can be expressed as a set function $f(A) = I(X;Y_A)$. We make a distinction between latent variables $X$ and observed variables $Y$. For any pair $I, J \subseteq V$ such that $I \cap J = \emptyset$, we assume $Y_I$ is independent of $y_J$ given $X$. Let $A\subseteq B\subseteq V$, and $j \in V\setminus B$, we have:
+\begin{eqnarray}
+    I(Y_j; Y_{B\setminus A} | Y_A) &\geq& 0 \\
+    H(Y_j|Y_A) - H(Y_j|Y_{(B\setminus A)\cup A}) &\geq& 0 \\
+    H(Y_j|Y_A) &\geq& H(Y_j|Y_B)
+\end{eqnarray}
+which is the submodularity for entropy. Continuing by using conditional independence assumption and subtracting $H(Y_j|X)=H(Y_j|X,Y_A)=H(Y_j|X,Y_B)$ from both sides:
+\begin{eqnarray}
+    H(Y_j|Y_A) - H(Y_j|X) &\geq& H(Y_j|Y_B) - H(Y_j|X)\\
+    H(Y_j|Y_A) - H(Y_j|X,Y_A) &\geq& H(Y_j|Y_B) - H(Y_j|X, Y_B)\\
+    I(Y_j;X|Y_A) &\geq& I(Y_j;X|Y_B) \\
+    I(X;Y_j|Y_A) &\geq& I(X;Y_j|Y_B) 
+\end{eqnarray}
+
 
 
 
