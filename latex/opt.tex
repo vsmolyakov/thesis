@@ -220,7 +220,7 @@ where the inequality is due to the fact that conditioning reduces entropy.
 \begin{theorem}
 (Mutual Information is submodular). MI is a submodular function if observed variables are conditionally independent given the latent state. 
 \end{theorem}
-\textit{Proof}. MI can be expressed as a set function $f(A) = I(X;Y_A)$. We make a distinction between latent variables $X$ and observed variables $Y$. For any pair $I, J \subseteq V$ such that $I \cap J = \emptyset$, we assume $Y_I$ is independent of $y_J$ given $X$. Let $A\subseteq B\subseteq V$, and $j \in V\setminus B$, we have:
+\textit{Proof}. MI can be expressed as a set function $f(A) = I(X;Y_A)$. We make a distinction between latent variables $X$ and observed variables $Y$. For any pair $I, J \subseteq V$ such that $I \cap J = \emptyset$, we assume $Y_I$ is independent of $Y_J$ given $X$. Let $A\subseteq B\subseteq V$, and $j \in V\setminus B$, we have:
 \begin{eqnarray}
     I(Y_j; Y_{B\setminus A} | Y_A) &\geq& 0 \\
     H(Y_j|Y_A) - H(Y_j|Y_{(B\setminus A)\cup A}) &\geq& 0 \\
@@ -234,8 +234,111 @@ which is the submodularity for entropy. Continuing by using conditional independ
     I(X;Y_j|Y_A) &\geq& I(X;Y_j|Y_B) 
 \end{eqnarray}
 
+\subsubsection{Greedy Maximization}
+
+Submodular functions arise in many applications and therefore it is natural to study submodular optimization. In particular, we focus on greedy maximization of submodular functions. We are interested in solving problems of the form:
+\begin{equation}
+    \max_{S\subseteq V} f(S)
+\end{equation}
+subject to some constraints on $S$. We will focus on two kinds of constraints: \textit{cardinality constraint} $|S| \leq k$ and the \textit{budget constraint} $\mathrm{cost}(S)\leq B$. An example of the former is a sensor placement problem where we want to find the $k$ best sensor locations. An example of the latter is a knapsack problem where we would like to maximize the value of items given a total budget of their weight.\\
+
+A simple greedy approach to maximizing submodular functions is a greedy selection summarized in Algorithm \ref{alg:submodular_1} that starts with an empty set $S_0$ and at iteration $i$, adds the element maximizing the increment function:
+\begin{equation}
+    S_i = S_{i-1} \cup \{\arg \max_e f(e|S_{i-1})\}
+\end{equation}
+
+\begin{algorithm}
+\caption{Greedy Algorithm for Maximizing a Submodular Function}
+\label{alg:submodular_1}
+\begin{algorithmic}[1]
+\STATE Init $A_0 = \emptyset$, $k$
+\STATE \textbf{for} $j=1,2,...,k$ \textbf{do}
+\STATE ~~~ $a_j = \arg \max_{e\in V} f(e|A_{j-1})$ 
+\STATE ~~~ set $A_j = A_{j-1} \cup \{a_j\}$ 
+\STATE ~~~ set $V = V\setminus \{a_j\}$ 
+\STATE \textbf{end for}  
+\end{algorithmic}
+\end{algorithm}
+
+A celebrated result by Nemhauser \cite{Nemhauser78} proves that that the greedy algorithm provides a good approximation to the optimal solution of the NP-hard optimization problem. 
+\begin{theorem}
+Let $f : 2^{V} \rightarrow \mathbb{R}$ be a non-negative, monotone submodular function and let $\{S_i\}_{i \geq 0}$ be the greedily selected sets. Then for all positive integers $k$ and $l$:
+\begin{equation}
+    f(S_l) \geq \bigg(1 - e^{-l/k} \bigg) \max_{S:|S|\leq k} f(S)
+\end{equation}
+\end{theorem}
+\textit{Proof}. Let $S^{\ast} = \arg \max \{f(S): |S| \leq k \}$ be an optimal set of size $k$. Order the elements of $S^{\ast}$ arbitrarily as $\{v_{1}^{\ast},...,v_{k}^{\ast}\}$. Then, we have the following sequence of inequalities for all $i < l$:
+\begin{eqnarray}
+    f(S^{\ast}) &\leq& f(S^{\ast}\cup S_i) \\
+                &=& f(S_i) + \sum_{j=1}^{k} f(v_{j}^{\ast}| S_i \cup \{v_{1}^{\ast},...,v_{j-1}^{\ast}\}) \\
+                &\leq& f(S_i) + \sum_{v\in S^{\ast}} f(v|S_i)\\
+                &\leq& f(S_i) + \sum_{v\in S^{\ast}} (f(S_{i+1})-f(S_i)) \\
+                &\leq& f(S_i) + k(f(S_{i+1})-f(S_i))
+\end{eqnarray}
+where the first inequality follows from monotonicity of $f$, the second equality is a telescoping sum, the third inequality is follows from the submodularity of $f$, the fourth holds because $S_{i+1}$ is built greedily from $S_i$, and the last inequality reflects the fact that $|S^{\ast}| \leq k$. Therefore,
+\begin{equation}
+    f(S^{\ast}) - f(S_i) \leq k(f(S_{i+1})-f(S_i))
+\end{equation}
+Define $\delta_i = f(S^{\ast}) - f(S_i)$, we can then re-write the above expression as $\delta_i \leq k (\delta_i - \delta_{i+1})$, that can be re-arranged to yield:
+\begin{equation}
+    \delta_{i+1} \leq \bigg(1-\frac{1}{k}\bigg) \delta_i
+\end{equation}
+Therefore, $\delta_l \leq (1-\frac{1}{k})^{l}\delta_0$. Using the inequality $1-x \leq e^{-x}$, we have
+\begin{equation}
+    \delta_l \leq \bigg(1-\frac{1}{k}\bigg)^{l}\delta_0 \leq e^{-l/k}f(S^{\ast})
+\end{equation}
+where we used the fact that $\delta_0 = f(S^{\ast}) - f(\emptyset) \leq f(S^{\ast})$ since $f$ is non-negative by assumption. Substituting $\delta_l = f(S^{\ast}) - f(S_l)$ and re-arranging, we get:
+\begin{equation}
+    f(S_l) \geq (1-e^{-l/k})f(S^{\ast})
+\end{equation}
+Therefore, if we let the greedy algorithm pick $l=k$ sensors (compared to the optimal set of size $k$), the greedy solution is no worse than $1-1/e \approx 0.632$ of the optimal value!\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/sfo_sensors_merged.png}
+    \caption{Submodular function optimization subject to cardinality constraint.}
+    \label{fig:sensors_merged}
+\end{figure}
+
+Figure \ref{fig:sensors_merged} shows a sensor selection problem that maximizes mutual information $F_{mi}(A) = H(V\setminus A) - H(V\setminus A | A)$ over the ground set $V$ subject to cardinality constraint: $|S| \leq k$. We can see that the selected sensors evenly cover the geographic area. Also shown are submodular utility scores along with Nemhouser bound obtained by taking the last score and dividing it by $(1-1/e)$.    
+
+In many applications, the elements $v \in V$ may have non-uniform costs $c(v)\geq 0$ and we may want to maximize $f$ subject to a budget $B$ that the total cost cannot exceed:
+\begin{equation}
+    \max_S f(S) s.t. \sum_{v \in S} c(v) \leq B
+\end{equation}
+The standard (uniform cost) greedy algorithm can perform arbitrarily badly since it ignores the cost. Therefore, we need to modify the selection step by normalizing the increment function by the element's cost:
+\begin{equation}
+    S_{i+1} = S_i \cup \bigg\{ \arg \max_{v \in V\setminus S_i : c(v)\leq B-c(S_i)} \frac{f(v|S_i)}{c(v)} \bigg\}
+\end{equation}
+Thus, we choose an element that has highest incremental gain and lowest cost. Note that the sensor selection problem can be thought of as a special case of the budget constrained problem if we assign unit costs to all measurements and set the budget $B=k$. Let $S_{uc}$ be the uniform cost solution and $S_{cb}$ be the cost-benefit greedy solution described above. It can be shown that:
+\begin{equation}
+    \max\{f(S_{uc}),f(S_{cb})\} \geq \frac{1-1/e}{2}\mathrm{OPT} 
+\end{equation}
+
+The submodular maximization algorithm with a budget constraint also known as Cost-Effective Lazy Forward-selection (CELF) Algorithm is summarized in Algorithm \ref{alg:celf}.
+
+\begin{algorithm}
+\caption{Cost-Effective Lazy Forward-selection (CELF)}
+\label{alg:celf}
+\begin{algorithmic}[1]
+\STATE Input: Reward function $F$, cost function $C$, budget $B$
+\STATE ~~~ $A_{UC} = \mathrm{LazyForward}(F,C,B,'UC')$
+\STATE ~~~ $A_{CB} = \mathrm{LazyForward}(F,C,B,'CB')$
+\STATE ~~~ return $\arg \max \{F(A_{UC}),F(A_{CB})\}$
+\STATE LazyForward(F,C,B,type)
+\STATE ~~~ 
+\STATE \textbf{end for}  
+\end{algorithmic}
+\end{algorithm}
 
 
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/sfo_budget_merged.png}
+    \caption{Submodular function optimization subject to budget constraint.}
+    \label{fig:sensors_budget}
+\end{figure}
 
 
 

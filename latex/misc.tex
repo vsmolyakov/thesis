@@ -300,6 +300,66 @@ Most classification algorithms will only perform optimally when the number of sa
 It's possible to combine over-sampling and under-sampling techniques into a hybrid strategy. Common examples include SMOTE and Tomek links or SMOTE and Edited Nearest Neighbors (ENN). Additional ways of learning on imbalanced datasets include weighing training instances, introducing different misclassification costs for positive and negative examples and bootstrapping. 
 
 
+\subsection{Ensembling Methods}
+
+Ensemble methods are meta-algorithms that combine several machine learning techniques into one predictive model in order to decrease variance (bagging), bias (boosting), or improve predictions (stacking). Ensemble methods can be divided into two paradigms: \textit{sequential} ensemble methods where the base learning are generated sequentially (e.g. AdaBoost) and \textit{parallel} ensemble methods where the base learners are generated in parallel (e.g. Random Forest). The basic motivation of sequential methods is to exploit the dependence between the base learners since the overall performance can be boosted by weighing preiously misslabeled examples with higher weight.  The basic motivation of parallel methods is to exploit independence between the base learners since the error can be reduced dramatically by averaging.\\  
+
+In order for ensemble methods to be more accurate than any of its individual members the base models have to be accurate and diverse.  
+
+\subsubsection{Bagging}
+
+Bagging stands for Bootstrap Aggregation. One way to reduce the variance of an estimate is to average together multiple estimates. For example, we can train $M$ different trees $f_m$ on different subsets of the data (chosen randomly with replacement) and compute the ensemble:
+\begin{equation}
+   f(x) = \frac{1}{M}\sum_{m=1}^{M}f_m(x)
+\end{equation}
+Bagging uses bootstrap sampling to obtain the data subsets for training the base learners. For aggregating the outputs of base learners, bagging uses voting for classification and averaging for regression.
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/ensemble_bagging_merged.png}
+    \caption{Bagging Ensemble with decision tree and k-NN as base estimator.}
+    \label{fig:ensemble_bagging}
+\end{figure}
+
+Figure \ref{fig:ensemble_bagging} shows the decision boundary of a decision tree and k-NN classifiers along with their bagging ensembles applied to the Iris dataset. The decision tree shows axes parallel boundaries while the $k=1$ nearest neighbors is fit closely to the data points. The bagging ensembles were trained using $10$ base estimators with $0.8$ subsampling of training data and $0.8$ subsampling of features. The decision tree bagging ensemble achieved higher accuracy in comparison to k-NN bagging ensemble because k-NN are less sensitive to perturbation on training samples and therefore they are called \textit{stable learners}. Combining stable learners is less advantageous since the ensemble will not help improve generalization performance. The figure also shows how the test accuracy improves with the size of the ensemble. Based on cross-validation results, we can see the accuracy increases until approximately $20$ estimators and then plateaus afterwards. Thus, adding base estimators beyond $20$ only increases computational complexity without accuracy gains for the Iris dataset. The figure also shows learning curves for the bagging tree ensemble. We can see an average error of $0.15$ on the training data and a U-shaped error curve for the testing data. The smallest gap between training and test errors occurs at around $80\%$ of the training set size.\\
+
+A commonly used class of ensemble algorithms are forests of randomized trees. In \textbf{random forests}, each tree in the ensemble is built from a sample drawn with replacement (i.e. a bootstrap sample) from the training set. In addition, instead of using all the features, a random subset of features is selected further randomizing the tree. As a result, the bias of the forest increases slightly but due to averaging of less correlated trees, its variance decreases resulting in an overall better model.\\
+
+In \textbf{extremely randomized trees} algorithm randomness goes one step further: the splitting thresholds are randomized. Instead of looking for the most discriminative threshold, thresholds are drawn at random for each candidate feature and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.\\  
+
+
+\subsubsection{Boosting}
+
+
+\subsubsection{Stacking}
+
+Stacking is an ensemble learning technique that combines multiple classification or regression models via a meta-classifier or a meta-regressor. The base level models are trained based on complete training set then the meta-model is trained on the outputs of base level model as features. 
+
+
+\begin{algorithm}
+\caption{Stacking}
+\label{alg:ensemble_stacking}
+\begin{algorithmic}[1]
+\STATE Input: training data $D=\{x_i,y_i\}_{i=1}^{m}$
+\STATE Ouput: ensemble classifier $H$
+\STATE \textit{Step 1: learn base-level classifiers}
+\STATE for $t = 1$ to $T$ do  
+\STATE ~~~ learn $h_t$ based on $D$
+\STATE end for 
+\STATE \textit{Step 2: construct new data set of predictions}
+\STATE for $i = 1$ to $m$ do 
+\STATE ~~~ $D_{h} = \{x_{i}^{\prime}, y_i\}$, where $x_{i}^{\prime}=\{h_1(x_i),...,h_T(x_i)\}$
+\STATE end for
+\STATE \textit{Step 3: learn a meta-classifier}
+\STATE learn $H$ based on $D_h$
+\STATE return $H$
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+
 
 
 

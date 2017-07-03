@@ -293,11 +293,11 @@ where the expectations used in Algorithm \ref{alg:svi_2} are computed as follows
     E[\log \sigma_k(V)] &=& \Psi(a_k) - \Psi(a_k+b_k) + \sum_{l=1}^{k-1}[\Psi(b_l)-\Psi(a_l+b_l)]
 \end{eqnarray}
 
-The on-line variational inference algorithm for Hierarchical Dirichlet Process was used to fit a topic model on the 20newsgroups dataset. The dataset consists of $11,314$ documents and over $100K$ unique tokens. Standard text pre-processing was used including tokenization, stop-word removal and stemming. A compressed dictionary of $4K$ words was constructed by filtering out tokens that appear in less than $5$ documents and more than $50\%$ of the corpus. The top-level truncation was set to $T=20$ topics and the second level truncation was set to $K=8$ topics. The concentration parameters were chosen as $\gamma = 1.0$ at the top-level and $\alpha=0.1$ at the group level to yield a broad range of shared topics that are concentrated at the group level. Figure \ref{fig:hdp_topics} shows a sample of the global level topics inferred by online variational HDP algorithm. We can find topics about autos, politics and for sale items that correspond to the target labels of the 20newsgroups dataset.
+The on-line variational inference algorithm for Hierarchical Dirichlet Process was used to fit a topic model on the 20newsgroups dataset. The dataset consists of $11,314$ documents and over $100K$ unique tokens. Standard text pre-processing was used including tokenization, stop-word removal and stemming. A compressed dictionary of $4K$ words was constructed by filtering out tokens that appear in less than $5$ documents and more than $50\%$ of the corpus. The top-level truncation was set to $T=20$ topics and the second level truncation was set to $K=8$ topics. The concentration parameters were chosen as $\gamma = 1.0$ at the top-level and $\alpha=0.1$ at the group level to yield a broad range of shared topics that are concentrated at the group level. Figure \ref{fig:hdp_topics_vb} shows a sample of the global level topics inferred by online variational HDP algorithm. We can find topics about autos, politics and for sale items that correspond to the target labels of the 20newsgroups dataset.
 
 \begin{figure}[thpb]
     \centering
     \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/hdp_topics.png}
     \caption{Sample of HDP topics inferred using online variational bayes algorithm on 20newsgroups dataset.}
-    \label{fig:hdp_topics}
+    \label{fig:hdp_topics_vb}
 \end{figure}
