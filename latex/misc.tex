@@ -300,15 +300,15 @@ Most classification algorithms will only perform optimally when the number of sa
 It's possible to combine over-sampling and under-sampling techniques into a hybrid strategy. Common examples include SMOTE and Tomek links or SMOTE and Edited Nearest Neighbors (ENN). Additional ways of learning on imbalanced datasets include weighing training instances, introducing different misclassification costs for positive and negative examples and bootstrapping. 
 
 
-\subsection{Ensembling Methods}
+\subsection{Ensemble Methods}
 
-Ensemble methods are meta-algorithms that combine several machine learning techniques into one predictive model in order to decrease variance (bagging), bias (boosting), or improve predictions (stacking). Ensemble methods can be divided into two paradigms: \textit{sequential} ensemble methods where the base learning are generated sequentially (e.g. AdaBoost) and \textit{parallel} ensemble methods where the base learners are generated in parallel (e.g. Random Forest). The basic motivation of sequential methods is to exploit the dependence between the base learners since the overall performance can be boosted by weighing preiously misslabeled examples with higher weight.  The basic motivation of parallel methods is to exploit independence between the base learners since the error can be reduced dramatically by averaging.\\  
+Ensemble methods are meta-algorithms that combine several machine learning techniques into one predictive model in order to decrease variance (bagging), bias (boosting), or improve predictions (stacking). Ensemble methods can be divided into two groups: \textit{sequential} ensemble methods where the base learners are generated sequentially (e.g. AdaBoost) and \textit{parallel} ensemble methods where the base learners are generated in parallel (e.g. Random Forest). The basic motivation of sequential methods is to exploit the dependence between the base learners since the overall performance can be boosted by weighing previously mislabeled examples with higher weight.  The basic motivation of parallel methods is to exploit independence between the base learners since the error can be reduced dramatically by averaging.\\  
 
-In order for ensemble methods to be more accurate than any of its individual members the base models have to be accurate and diverse.  
+Most ensemble methods use a single base learning algorithm to produce homogeneous base learners, i.e. learners of the same type leading to \textit{homogeneous ensembles}. There are also some methods that use heterogeneous learners, i.e. learners of different types, leading to \textit{heterogeneous ensembles}. In order for ensemble methods to be more accurate than any of its individual members the base learners have to be as accurate as possible and as diverse as possible. \\
 
 \subsubsection{Bagging}
 
-Bagging stands for Bootstrap Aggregation. One way to reduce the variance of an estimate is to average together multiple estimates. For example, we can train $M$ different trees $f_m$ on different subsets of the data (chosen randomly with replacement) and compute the ensemble:
+Bagging stands for bootstrap aggregation. One way to reduce the variance of an estimate is to average together multiple estimates. For example, we can train $M$ different trees $f_m$ on different subsets of the data (chosen randomly with replacement) and compute the ensemble:
 \begin{equation}
    f(x) = \frac{1}{M}\sum_{m=1}^{M}f_m(x)
 \end{equation}
@@ -321,7 +321,7 @@ Bagging uses bootstrap sampling to obtain the data subsets for training the base
     \label{fig:ensemble_bagging}
 \end{figure}
 
-Figure \ref{fig:ensemble_bagging} shows the decision boundary of a decision tree and k-NN classifiers along with their bagging ensembles applied to the Iris dataset. The decision tree shows axes parallel boundaries while the $k=1$ nearest neighbors is fit closely to the data points. The bagging ensembles were trained using $10$ base estimators with $0.8$ subsampling of training data and $0.8$ subsampling of features. The decision tree bagging ensemble achieved higher accuracy in comparison to k-NN bagging ensemble because k-NN are less sensitive to perturbation on training samples and therefore they are called \textit{stable learners}. Combining stable learners is less advantageous since the ensemble will not help improve generalization performance. The figure also shows how the test accuracy improves with the size of the ensemble. Based on cross-validation results, we can see the accuracy increases until approximately $20$ estimators and then plateaus afterwards. Thus, adding base estimators beyond $20$ only increases computational complexity without accuracy gains for the Iris dataset. The figure also shows learning curves for the bagging tree ensemble. We can see an average error of $0.15$ on the training data and a U-shaped error curve for the testing data. The smallest gap between training and test errors occurs at around $80\%$ of the training set size.\\
+Figure \ref{fig:ensemble_bagging} shows the decision boundary of a decision tree and k-NN classifiers along with their bagging ensembles applied to the Iris dataset. The decision tree shows axes parallel boundaries while the $k=1$ nearest neighbors fits closely to the data points. The bagging ensembles were trained using $10$ base estimators with $0.8$ subsampling of training data and $0.8$ subsampling of features. The decision tree bagging ensemble achieved higher accuracy in comparison to k-NN bagging ensemble because k-NN are less sensitive to perturbation on training samples and therefore they are called \textit{stable learners}. Combining stable learners is less advantageous since the ensemble will not help improve generalization performance. The figure also shows how the test accuracy improves with the size of the ensemble. Based on cross-validation results, we can see the accuracy increases until approximately $20$ base estimators and then plateaus afterwards. Thus, adding base estimators beyond $20$ only increases computational complexity without accuracy gains for the Iris dataset. The figure also shows learning curves for the bagging tree ensemble. We can see an average error of $0.15$ on the training data and a U-shaped error curve for the testing data. The smallest gap between training and test errors occurs at around $80\%$ of the training set size.\\
 
 A commonly used class of ensemble algorithms are forests of randomized trees. In \textbf{random forests}, each tree in the ensemble is built from a sample drawn with replacement (i.e. a bootstrap sample) from the training set. In addition, instead of using all the features, a random subset of features is selected further randomizing the tree. As a result, the bias of the forest increases slightly but due to averaging of less correlated trees, its variance decreases resulting in an overall better model.\\
 
@@ -330,11 +330,55 @@ In \textbf{extremely randomized trees} algorithm randomness goes one step furthe
 
 \subsubsection{Boosting}
 
+Boosting refers to a family of algorithms that are able to convert weak learners to strong learners. The main principle of Boosting is to fit a sequence of weak learners (models that are only slightly better than random guessing, such as small decision trees) to weighted versions of the data, where more weight is given to examples that were mis-classified by earlier rounds. The predictions are then combined through a weighted majority vote (classification) or a weighted sum (regression) to produce the final prediction. The principal difference between boosting and the committee methods such as bagging is that base learners are trained in sequency on a weighted version of the data.   
+
+Algorithm \ref{alg:adaboost} describes the most widely used form of boosting algorithm called \textbf{AdaBoost} which stands for adaptive boosting \cite{Freund97}. 
+
+\begin{algorithm}
+\caption{AdaBoost}
+\label{alg:adaboost}
+\begin{algorithmic}[1]
+\STATE Init data weights $\{w_n\}$ to $1/N$ 
+\STATE \textbf{for} $m = 1$ to $M$ \textbf{do}  
+\STATE ~~~ fit a classifier $y_m(x)$ by minimizing weighted error function $J_m$:
+\STATE ~~~ $J_m = \sum_{n=1}^{N} w_{n}^{(m)}1[y_m(x_n) \neq t_n]$
+\STATE ~~~ compute $\epsilon_m = \sum_{n=1}^{N} w_{n}^{(m)}1[y_m(x_n) \neq t_n] / \sum_{n=1}^{N}w_{n}^{(m)}$
+\STATE ~~~ evaluate $\alpha_m = \log \big(\frac{1-\epsilon_m}{\epsilon_m}\big)$
+\STATE ~~~ update the data weights: $w_{n}^{(m+1)} = w_{n}^{(m)}\exp\{\alpha_m 1[y_m(x_n) \neq t_n]\}$
+\STATE \textbf{end for}
+\STATE Make predictions using the final model: $Y_M(x)=\mathrm{sign}\bigg(\sum_{m=1}^{M}\alpha_m y_m(x)\bigg)$ 
+\end{algorithmic}
+\end{algorithm}
+
+We see that the first base classifier $y_1(x)$ is trained using weighting coefficients $w_{n}^{(1)}$ that are all equal. In subsequent boosting rounds, the weighting coefficients $w_{n}^{(m)}$ are increased for data points that are misclassified and decreased for data points that are correctly classified. The quantity $\epsilon_m$ represents a weighted error rate of each of the base classifiers. Therefore, the weighting coefficients $\alpha_m$ give greater weight to the more accurate classifiers.\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/ensemble_boosting_merged.png}
+    \caption{Boosting Ensemble with decision tree as base estimator.}
+    \label{fig:ensemble_boosting}
+\end{figure}
+
+The AdaBoost algorithm is illustrated in Figure \ref{fig:ensemble_boosting}. Each base learner consists of a decision tree with depth $1$, thus classifying the data based on a feature threshold that partitions the space into two regions separated by a linear decision surface that is parallel to one of the axes. The figure also shows how the test accuracy improves with the size of the ensemble and the learning curves for training and testing data.\\
+
+\textbf{Gradient Tree Boosting} is a generalization of boosting to arbitrary differentiable loss functions. It can be used for both regression and classification problems. Gradient Boosting builds the model in a sequential way:
+\begin{equation}
+    F_m(x) = F_{m-1}(x) + \gamma_m h_m(x)
+\end{equation}
+At each stage the decision tree $h_m(x)$ is chosen to minimize a loss function $L$ given the current model $F_{m-1}(x)$:
+\begin{equation}
+    F_m(x) = F_{m-1}(x) + \arg \min_h \sum_{i=1}^{n} L(y_i, F_{m-1}(x_i) + h(x_i))
+\end{equation}
+Gradient Boosting attempts to solve this minimization problem numerically via steepest descent. The steepest descent direction is the negative gradient of the loss function evaluated at the current model $F_{m-1}$:
+\begin{equation}
+    F_m(x) = F_{m-1}(x) + \gamma_m \sum_{i=1}^{n} \nabla_F L(y_i, F_{m-1}(x_i))
+\end{equation}
+where the step size $\gamma_m$ is chosen using line search. The algorithms for regression and classification differ in the type of loss function used.
+
 
 \subsubsection{Stacking}
 
-Stacking is an ensemble learning technique that combines multiple classification or regression models via a meta-classifier or a meta-regressor. The base level models are trained based on complete training set then the meta-model is trained on the outputs of base level model as features. 
-
+Stacking is an ensemble learning technique that combines multiple classification or regression models via a meta-classifier or a meta-regressor. The base level models are trained based on complete training set then the meta-model is trained on the outputs of base level model as features. The base level often consists of different learning algorithms and therefore stacking ensembles are often heterogeneous. Algorithm \ref{alg:ensemble_stacking} summarizes stacking. 
 
 \begin{algorithm}
 \caption{Stacking}
@@ -343,13 +387,13 @@ Stacking is an ensemble learning technique that combines multiple classification
 \STATE Input: training data $D=\{x_i,y_i\}_{i=1}^{m}$
 \STATE Ouput: ensemble classifier $H$
 \STATE \textit{Step 1: learn base-level classifiers}
-\STATE for $t = 1$ to $T$ do  
+\STATE \textbf{for} $t = 1$ to $T$ \textbf{do}  
 \STATE ~~~ learn $h_t$ based on $D$
-\STATE end for 
+\STATE \textbf{end for} 
 \STATE \textit{Step 2: construct new data set of predictions}
-\STATE for $i = 1$ to $m$ do 
+\STATE \textbf{for} $i = 1$ to $m$ \textbf{do} 
 \STATE ~~~ $D_{h} = \{x_{i}^{\prime}, y_i\}$, where $x_{i}^{\prime}=\{h_1(x_i),...,h_T(x_i)\}$
-\STATE end for
+\STATE \textbf{end for}
 \STATE \textit{Step 3: learn a meta-classifier}
 \STATE learn $H$ based on $D_h$
 \STATE return $H$
@@ -357,7 +401,14 @@ Stacking is an ensemble learning technique that combines multiple classification
 \end{algorithm}
 
 
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.95\textwidth, trim={10 10 10 10}]{figures/ensemble_stacking_merged.png}
+    \caption{Stacking Ensemble with Logistic Regression as meta-classifier.}
+    \label{fig:ensemble_stacking}
+\end{figure}
 
+The stacking ensemble is illustrated in Figure \ref{fig:ensemble_stacking}. It consists of k-NN, Random Forest and Naive Bayes base classifiers whose predictions are combined by Lostic Regression as a meta-classifier. We can see the blending of decision boundaries achieved by the stacking classifier. The figure also shows that stacking achieves higher accuracy than individual classifiers and based on learning curves, it shows no signs of overfitting.\\ 
 
 
 
