@@ -76,8 +76,24 @@ where $M = l^{-2}I$, $l$ is the horizontal scale over which the function changes
     \caption{The effect of varying GP hyperparameters}
     \label{fig:gp34}
 \end{figure}
-Figure \ref{fig:gp34} shows the importance of choosing kernel hyperparameters and their impact  on GP regression. We fix $\sigma_{f}^{2} = 1$ and plot GP regression after $7$ noisy observations. On the left, the length scale and noise variance were set to $(l,\sigma_{y}^{2}) = (1, 0.2)$. We can see that the mean function appears wiggly and has a small bias due to observation noise. On the right, the kernel parameters were set to $(l,\sigma_{y}^{2}) = (10,0.8)$. The curve is much smoother due to large $l$ and also shows higher observation noise. 
 
+Figure \ref{fig:gp34} shows the importance of choosing kernel hyperparameters and their impact  on GP regression. We fix $\sigma_{f}^{2} = 1$ and plot GP regression after $7$ noisy observations. On the left, the length scale and noise variance were set to $(l,\sigma_{y}^{2}) = (1, 0.2)$. We can see that the mean function appears wiggly and has a small bias due to observation noise. On the right, the kernel parameters were set to $(l,\sigma_{y}^{2}) = (10,0.8)$. The curve is much smoother due to large $l$ and also shows higher observation noise.\\
+
+We can use MCMC to learn GP hyperparameters by placing a prior on scale $l$, function variance $\sigma_{f}^{2}$ and noise variance $\sigma_{y}^{2}$. We choose uninformative priors for GP hyper-parameters:
+\begin{eqnarray}
+    l &\sim& \mathrm{Unif}(0,10)\\
+    \sigma_{f}^{2} &\sim& \exp\{\mathrm{Unif}(-10,5)\}\\
+    \sigma_{y}^{2} &\sim& \exp\{\mathrm{Unif}(-10,5)\}
+\end{eqnarray}
+Using the No-U-Turn Sampler (NUTS) we obtain the following trace plots shown in Figure \ref{fig:gp_hyper}. We can see that posterior mode is close to ground truth hyper-parameters shown by solid red lines.\\
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/gp1_hyperparams.png}
+    \caption{MCMC trace plots for GP hyperparameters.}
+    \label{fig:gp_hyper}
+\end{figure}
+ 
 Gaussian Processes (GPs) can be used for classification if the output of a GP is mapped to the range $[0, 1]$. In the binary case, we define the model as $p(y_i|x_i) = \sigma(f(x_i))$, where we let $\sigma(z)=(1+\exp(-z))^{-1}$. As with Bayesian logistic regression, the main difficulty in fitting GP classifier is that the Gaussian prior is not conjugate to the multinoulli likelihood. As a result several approximation algorithms can be used: Gaussian approximation, Expectation Propagation, variational and MCMC. 
 
 
@@ -93,13 +109,23 @@ for every finite measurable partition $A_1$,...,$A_r$ of $\Theta$, where Dirichl
 \begin{equation}
     p(x_1,...,x_K) = \frac{\Gamma(\sum_k \alpha_k)}{\prod_k \Gamma(\alpha_k)}\prod_{k=1}^{K}x_{k}^{\alpha_k-1}
 \end{equation}
-The base distribution is the mean of the DP: $E[G(A)] = H(A)$, whereas the concentration parameter is the inverse variance: $V[G(A)] = H(A)(1-H(A))/(\alpha+1)$ for any measureable set $A\subset \Theta$. The larger the $\alpha$, the smaller the variance, and the DP will concentrate more of its mass around the mean.
+
 \begin{figure}[tbhp]
     \centering
     \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/dir_merged.png}
     \caption{Dirichlet distribution: $\mathrm{Dir}(\alpha_1,\alpha_2,\alpha_3)$ over the simplex.}
     \label{fig:dir_merged}
 \end{figure}
+
+The base distribution is the mean of the DP: $E[G(A)] = H(A)$, whereas the concentration parameter is the inverse variance: $V[G(A)] = H(A)(1-H(A))/(\alpha+1)$ for any measureable set $A\subset \Theta$. The larger the $\alpha$, the smaller the variance, and the DP will concentrate more of its mass around the mean as shown in Figure \ref{fig:dp_cdf}.
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/dp_cdf.png}
+    \caption{Base distribution CDF for $\alpha=2$ and $\alpha=50$.}
+    \label{fig:dp_cdf}
+\end{figure}
+
 Let $\theta_1,...,\theta_n$ be a sequence of independent draws from $G\sim DP(\alpha,H)$. We are interested in the posterior distribution of G given observed values of $\theta_1,...,\theta_n$. Let $n_k$ be the number of observed values in $A_k$, the by conjugacy the Dirichlet and multinomial distributions we have:
 \begin{equation}
     (G(A_1),...,G(A_r))|\theta_1,...,\theta_n \sim \mathrm{Dir}(\alpha H(A_1)+n_1,...,\alpha H(A_r)+n_r)
@@ -323,6 +349,35 @@ where $Z$ is a binary feature matrix, the values for feature $k$ are stored in r
 Figure \ref{fig:ibp_z} shows the predicted binary feature matrix $Z$ and lower bound on marginal likelihood using variational inference algorithm for IBP \cite{DosMilVan2009a}. The concentration parameter was set to $\alpha=1$ and the feature truncation level was set to $K=6$. 
 
 
+\subsection{Infinite Mixture of Experts}
+
+Just as Dirichlet process mixtures can be thought of as infinite mixture models that select the number of active components as part of inference, infinite mixture of experts can be thought of selecting active components from an infinite number of regressions. This flexibility makes it a powerful tool for nonparametric Bayesian data analysis.\\
+
+Infinite mixture of experts generalizes the Dirichlet Process Mixture Model by allowing the mixture weights and component means to vary according to the input predictor $x$:
+\begin{equation}
+    y | x \sim \sum_{i=1}^{\infty} w_i | x \times N(\mu_i|x, \tau_i^{-1})
+\end{equation}
+
+To determine the conditional mixture weights, we can use probit stick-breaking process:
+\begin{eqnarray}
+    v_i | x = \Phi(\alpha_i + \beta_i x) \\
+    w_i | x = v_i | x \times \prod_{j=1}^{i-1}(1-v_j|x)
+\end{eqnarray}
+where $\Phi$ is the cumulative distribution function of the standard normal. To model multiple regressions, we define the mean of the mixture of experts as:
+\begin{equation}
+    \mu_i | x \sim \gamma_i + \delta_i x
+\end{equation}
+
+Figure \ref{fig:moe_reg} shows an infinite mixture of experts applied to LIDAR dataset that shows locally linear relationship between range and log ratio as well as heteroskedastic observation noise. The infinite mixture was truncated at $K=20$ components which is reasonable considering that there are only three linear regressions having non-zero posterior expected weight.
+
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=0.6\textwidth, trim={10 10 10 10}]{figures/mixture_of_experts.png}
+    \caption{Infinite Mixture of Experts Regression.}
+    \label{fig:moe_reg}
+\end{figure}
+
+Normal priors were set on regression coefficients for mixture mean and mixture weights, in addition $\tau_i \sim \mathrm{Gamma}(1,1)$ prior was set on the precision of the Gaussian mixture. The figure also shows a $95\%$ credible interval that captures well the time-varying nature of observation noise. The flexibility of infinite mixture of experts and the ability to modularly specify the conditional mixture weights and component densities makes it a very useful nonparametric Bayesian model. 
 
 \subsection{DPMM}
 

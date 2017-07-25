@@ -330,7 +330,7 @@ In \textbf{extremely randomized trees} algorithm randomness goes one step furthe
 
 \subsubsection{Boosting}
 
-Boosting refers to a family of algorithms that are able to convert weak learners to strong learners. The main principle of Boosting is to fit a sequence of weak learners (models that are only slightly better than random guessing, such as small decision trees) to weighted versions of the data, where more weight is given to examples that were mis-classified by earlier rounds. The predictions are then combined through a weighted majority vote (classification) or a weighted sum (regression) to produce the final prediction. The principal difference between boosting and the committee methods such as bagging is that base learners are trained in sequency on a weighted version of the data.   
+Boosting refers to a family of algorithms that are able to convert weak learners to strong learners. The main principle of boosting is to fit a sequence of weak learners (models that are only slightly better than random guessing, such as small decision trees) to weighted versions of the data, where more weight is given to examples that were mis-classified by earlier rounds. The predictions are then combined through a weighted majority vote (classification) or a weighted sum (regression) to produce the final prediction. The principal difference between boosting and the committee methods such as bagging is that base learners are trained in sequence on a weighted version of the data.   
 
 Algorithm \ref{alg:adaboost} describes the most widely used form of boosting algorithm called \textbf{AdaBoost} which stands for adaptive boosting \cite{Freund97}. 
 
