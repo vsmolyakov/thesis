@@ -28,6 +28,25 @@ The variational objective function (\ref{equ:var_obj}) is closely related to ene
 
 The reverse KL that acts as a penalty term in the variational objective is also known as I-projection or information projection. In the reverse KL, $q(x)$ will typically under-estimate the support of $p(x)$ and will lock onto one of its modes. This is due to $q(x)=0$ whenever $p(x)=0$ to make sure the KL divergence stays finite. On the other hand, the forward KL, known as M-projection or momement projection is zero avoiding for $q(x)$ and will over-estimate the support of $p(x)$ as shown in Figure \ref{fig:kl_bimodal}.\\
 
+We can use the Jensen's inequality to derive the Evidence Lower BOund (ELBO), an objective that we can maximize to learn the variational parameters of our model. Let $x$ be our data and $z$ be the latent variables, then we can derive our ELBO objective as follows:
+\begin{eqnarray}
+   \log p(x) &=& \log \sum_{z} p(x,z) = \log \sum_{z}\frac{q(z)}{q(z)} p(x,z) = \log E_{q(z)}\bigg[\frac{p(x,z)}{q(z)} \bigg] \\
+   &\geq& E_{q(z)}\bigg[\log \frac{p(x,z)}{q(z)} \bigg] = E_{q(x)}\bigg[\log p(x,z)\bigg] - E_{q(x)}\bigg[\log q(x)\bigg] = \mathrm{ELBO}
+\end{eqnarray}
+Notice that the first term is the average negative energy and the second term is the entropy. Thus, a good posterior must assign most of its probability mass to regions of low energy (i.e. high joint probability density) while also maximizing the entropy of $q(z)$. Thus, variational Bayes, in constrast to MAP, prevents $q(z)$ from collapsing to an atom.\\  
+
+One form of ELBO emphasizes that the lower bound becomes tighter as the variational distribution better approximates the posterior:
+\begin{equation}
+    \mathrm{ELBO} = E_{q(z)}\bigg[\log \frac{p(x,z)}{q(z)}\bigg] = E_{q(z)}\bigg[\log \frac{p(z|x)p(x)}{q(z)} \bigg] = -KL(q(z)||p(z|x)) + \log p(x)
+\end{equation}
+Therefore, we can improve the ELBO by improving the model log evidence $\log p(x)$ through the prior $p(z)$ or the likelihood $p(z|x)$ or by improving the variational posterior approximation $q(z)$.\\
+
+Finally, we can write the ELBO as follows:
+\begin{equation}
+    \mathrm{ELBO} = \frac{1}{n}\sum_{i=1}^{n}\bigg[E_{q(z_i)}\big[\log p(x_i|z_i)\big] - KL(q(z_i)||p(z_i))\bigg]
+\end{equation}
+this version emphasizes a likelihood term for the $i$-th observation and KL divergence term between each approximating distribution and the prior.\\
+
 One of the most popular forms of variational inference is called the \textit{mean field} approximation, where we assume that the posterior is a fully factorized approximation of the form:
 \begin{equation}
     q(x) = \prod_i q_i(x_i)
@@ -155,6 +174,82 @@ Figure \ref{fig:lda_onlinevb} shows the inference results for the online VB LDA 
    \mathrm{Perplexity(w_{test})} = \exp\{-\frac{1}{D_{test}}\sum_{d} \frac{1}{n_d} \sum_{w \in n_d} \log p(w_{test})\}
 \end{equation}
 Model selection can be done by evaluating perplexity for different values of $K$. Guided by the fact that there are $20$ different newsgroups, the value of $K$ was set to $20$. Finally, the top $20$ words for a random sample of $4$ topics are shown in Figure \ref{fig:lda_onlinevb}. The four topics are about information, sports, computers and school.\\
+
+\subsection{Application: Image Denoising in Ising Model}
+
+The Ising model is an example of a Markov Random Field (MRF) and has its origins in statistical physics. The Ising model assumes that we have a grid of nodes, where each node can be in one of two possible states. The state of each node depends on the neighboring nodes through interaction potentials. In the case of images, this translates to a smoothness constraint, i.e. a pixel prefers to be of the same color as the neighboring pixels. In the image denoising problem, we assume that we have a 2-D grid of noisy pixel observations of an underlying true image and we would like to recover the true image.\\
+
+Let $y_i$ be noisy observations of binary latent variables $x_i \in \{-1,+1\}$. We can write down the joint distribution as follows:
+\begin{equation}
+    p(x,y) = p(x)p(y|x) = \prod_{(s,t)\in E} \Psi_{st}(x_s, x_t)\prod_{i=1}^{n}p(y_i|x_i) = \prod_{(s,t)\in E} \exp\{x_s w_{st} x_t\}\prod_{i=1}^{n} N(y_i|x_i, \sigma^2)
+\end{equation}
+where the interaction potentials are represented by $\Psi_{st}$ for every pair of nodes $x_s$ and $x_t$ in a set of edges $E$ and the observations $y_i$ are Gaussian with mean $x_i$ and variance $\sigma^2$. Here, $w_{st}$ is the coupling strength and assumed to be constant and equal to $J>0$ indicating a preference for the same state as neighbors (i.e. the potential $\Psi(x_s, x_t)=\exp \{ x_s J x_t\}$ is higher when $x_s$ and $x_t$ are both either $+1$ or $-1$).\\
+
+To fit the model parameters using variational inference, we want to maximize the ELBO:
+\begin{eqnarray}
+    \mathrm{ELBO} &=& E_{q(x)}\bigg[\log p(x,y)\bigg] - E_{q(x)}\bigg[\log q(x)\bigg] = \\
+    &=& E_{q(x)}\bigg[\sum_{(s,t)\in E}x_s w_{st} x_t + \sum_{i=1}^{n}\log N(x_i;\sigma^2) \bigg] - \sum_{i=1}^{n}E_{q_i(x)}\bigg[\log q_i(x)\bigg]
+\end{eqnarray}
+where we are using the mean-field assumption of a fully-factored approximation $q(x)$:
+\begin{equation}
+    q(x) = \prod_{i=1}^{n} q(x_i; \mu_i)
+\end{equation}
+Using the previously derived result, we state that $q(x_i;\mu_i)$ that minimizes the KL divergence is given by:
+\begin{equation}
+    q_i(x_i) = \frac{1}{Z_i} \exp \bigg[E_{-q_i}\{\log p(x)\}\bigg]
+\end{equation}
+where $E_{-q_i}$ denotes the expectation over every $q_j$ except for $j=i$. To compute $q_i(x_i)$, we only care bout the terms that involve $x_i$, i.e. we can isolate them as follows:
+\begin{eqnarray}
+    E_{-q_i}\{\log p(x)\} &=& E_{-q_i}\{x_i \sum_{j\in N(i)}w_{ij}x_j + \log N(x_i,\sigma^2) + \mathrm{const}\} = \\ 
+    &=& x_i \sum_{j\in N(i)}J\times \mu_j + \log N(x_i,\sigma^2) + \mathrm{const}
+\end{eqnarray}
+where $N(i)$ denotes the neighbors of node $i$ and $\mu_j$ is the mean of a binary random variable:
+\begin{equation}
+    \mu_j = E_{q_j}[x_j] = q_j(x_j=+1)\times (+1) + q_j(x_j=-1)\times (-1)
+\end{equation}
+
+Figure \ref{fig:ising_vi1} shows the parametric form of our mean-field approximation for the Ising model:
+\begin{figure}[hptb]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/ising_vi1.png}
+    \caption{Mean-field VI approximation (left) and Ising model (right).}
+    \label{fig:ising_vi1}
+\end{figure}
+
+In order to compute this mean, we need to know the values of $q_j(x_j=+1)$ and $q_j(x_j=-1)$. Let $m_i = \sum_{j\in N(i)}w_{ij}\mu_j$ be the mean value of neighbors and let $L_{i}^{+} = N(x_i=+1,\sigma^2)$ and $L_{i}^{-} = N(x_i=-1, \sigma^2)$, then we can compute the mean as follows:
+\begin{eqnarray}
+    q_i(x_i=+1) &=& \frac{\exp \{m_i + L_{i}^{+}\}}{\exp \{m_i + L_{i}^{+}\} + \exp \{-m_i + L_{i}^{-}\}} \\
+    &=& \frac{1}{1+\exp \{-2m_i + L_{i}^{-} - L_{i}^{+}\}} = \frac{1}{1+\exp \{-2a_i\}} = \sigma(2a_i)
+\end{eqnarray}
+where $a_i = m_i + 1/2(L_{i}^{+} - L_{i}^{-})$ and $\sigma(x)$ is a sigmoid function. Since $q_i(x_i=-1) = 1-q_i(x_i=+1)=1-\sigma(2a_i)=\sigma(-2a_i)$, we can write the mean of our variational approximation $q_i(x_i)$ as follows:
+\begin{equation}
+   \mu_i = E_{q_i}[x_i] = \sigma(2a_i) - \sigma(-2a_i) = \tanh(a_i)
+\end{equation}
+In other words, our mean-field updates of the variational parameters $\mu_i$ at iteration $k$ are computed as follows:
+\begin{equation}
+    \mu_{i}^{(k)} = \tanh \bigg(\sum_{j\in N(i)}w_{ij}\mu_{j}^{(k-1)} + \frac{1}{2}\bigg[\log \frac{N(x_i=+1,\sigma^2)}{N(x_i=-1,\sigma^2)} \bigg] \bigg)\times \lambda + (1-\lambda)\times \mu_{i}^{(k-1)}
+\end{equation}
+where we added a learning rate parameter $\lambda \in (0, 1]$. We further note that we can simplify the computation of ELBO term by term as follows:
+\begin{eqnarray}
+  && \sum_{(s,t)\in E} E_{q(x)}[x_s w_{st} x_t] = \frac{1}{2}\sum_{i=1}^{n}\sum_{j\in N(i)}\bigg(\sum_{x_i \in \{-1,+1\}} \sum_{x_j \in \{-1,+1\}}q_i(x_i)q_j(x_j)x_i J x_j \bigg) = \\
+  && \frac{1}{2}\sum_{i=1}^{n}\sum_{j\in N(i)}\bigg(q_i(x_i=+1)JE[x_j] - q_i(x_i=-1)JE[x_j]\bigg) = \frac{1}{2}\sum_{i=1}^{n}\sum_{j \in N(i)} E[x_i] J E[x_j] 
+\end{eqnarray}
+Similarly,
+\begin{eqnarray}
+ && E_{q(x)}[\log N(x_i, \sigma^2)] = \sum_{i=1}^{n}\bigg[\sum_{x_i \in \{-1,+1\}}q_i(x_i)\log N(x_i,\sigma^2) \bigg] = \\
+ && \sum_{i=1}^{n}\bigg[\sigma(2a_i)\log N(x_i=+1,\sigma^2)+\sigma(-2a_i)\log N(x_i=-1,\sigma^2) \bigg]
+\end{eqnarray}
+
+\begin{figure}[hptb]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={10 10 10 10}]{figures/ising_vi2.png}
+    \caption{Image Denoising for Ising model.}
+    \label{fig:ising_vi2}
+\end{figure}
+
+Figure \ref{fig:ising_vi2} shows experimental results for binary image denoising via mean-field variational inference. The noisy observed image is shown in the top-left obtained by adding Gaussian noise to each pixel and binarizing the image based on mean threshold. We then set the variational inference parameters such as the coupling strength $J=1$, noise level $\sigma = 2$, smoothing rate $\lambda=0.5$ and max number of iterations to $15$. The resulting de-noised binary image is shown in the bottom-left corner of Figure \ref{fig:ising_vi2}. We can also see an increase in the ELBO objective (top-right) and a decrease in the average entropy of our binary random variables $q_i(x_i)$ representing the value of each pixel (bottom-right) as the number of mean-field iterations increases.\\
+
+The 2-D Ising model can be extended in multiple ways, for example: 3-D grids and $K$-states per node (aka Potts model).\\
 
 \subsection{Stochastic Variational Inference}
 
