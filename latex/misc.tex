@@ -130,11 +130,11 @@ which follows from the chain rule for probability: $p(x,y) = p(x)p(y|x) = p(y)p(
 \end{equation}
 where the inequality follows from the fact that conditioning reduces entropy. For continuous random variables, the multivariate Gaussian is the distribution with maximum differential entropy:
 \begin{eqnarray}
-    h(X_1,...,X_N) &=& \int p(x) \log \frac{1}{p(x)} dx \\
-    &=& \int p(x) \bigg[\frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}(x-\mu)^{T}\Sigma^{-1}(x-\mu)\bigg] dx \\
-    &=& \frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}E[(x-\mu)^{T}\Sigma^{-1}(x-\mu)] \\
-    &=& \frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}Tr\{\Sigma^{-1}\Sigma\} \\
-    &=& \frac{1}{2}\log (2\pi)^{d}|\Sigma| + \frac{1}{2}d \log e = \frac{1}{2}\log\big[(2\pi e)^d|\Sigma|\big] 
+    h(X_1,...,X_n) &=& \int p(x) \log \frac{1}{p(x)} dx \\
+    &=& \int p(x) \bigg[\frac{1}{2}\log (2\pi)^{n}|\Sigma| + \frac{1}{2}(x-\mu)^{T}\Sigma^{-1}(x-\mu)\bigg] dx \\
+    &=& \frac{1}{2}\log (2\pi)^{n}|\Sigma| + \frac{1}{2}E[(x-\mu)^{T}\Sigma^{-1}(x-\mu)] \\
+    &=& \frac{1}{2}\log (2\pi)^{n}|\Sigma| + \frac{1}{2}Tr\{\Sigma^{-1}\Sigma\} \\
+    &=& \frac{1}{2}\log (2\pi)^{n}|\Sigma| + \frac{1}{2}n \log e = \frac{1}{2}\log\big[(2\pi e)^n|\Sigma|\big] 
 \end{eqnarray}
 In information theory, the analog of the law of large numbers is the Asymptotic Equipartition Property (AEP). The AEP states that:
 \begin{theorem}
@@ -242,7 +242,37 @@ The relationship between entropy and MI is captured in a Venn diagram in Figure 
 \begin{equation}
     PMI(x,y) = \log \frac{p(x,y)}{p(x)p(y)} = \log \frac{p(x|y)}{p(x)} = \log \frac{p(y|x)}{p(y)}
 \end{equation}
-This can be interpreted as the amount we learn from updating the prior $p(x)$ into the posterior $p(y|x)$
+This can be interpreted as the amount we learn from updating the prior $p(y)$ into the posterior $p(y|x)$. In fact, we can express MI as follows:
+\begin{equation}
+    I(X;Y) = \sum_x p(x) \sum_y p(y|x) \log \frac{p(y|x)}{p(y)} = E_{p(x)}\big[KL(p(y|x)||p(y)) \big]
+\end{equation}
+Therefore, the MI between $X$ and $Y$ is equivalent to the expected KL distance between the posterior distribution $p(y|x)$ and the prior $p(y)$.
+
+\begin{theorem}
+(Non-decreasing property of MI). As we add more random variables, the MI can increase or stay the same:
+\begin{equation}
+    I(X; Y_1) \leq I(X; Y_1, Y_2) \leq I(X; Y_1,...,Y_n)
+\end{equation}
+where equality holds when $Y_i$'s are independent of $X$.
+\end{theorem}
+
+We can compute a variational lower bound on MI using the Gibbs inequality.
+\begin{theorem}
+(Variational MI bound). Let $p(x)$ be the original posterior distribution and $q(x)$ be the variational approximation to the posterior. The, the following inequality holds:
+\begin{equation}
+    I(X;Y) = \max_q \bigg[H_p(x) + E_p\big[\log q(x)\big]\bigg]
+\end{equation}
+\end{theorem}
+\textit{Proof}. By non-negativity of KL divergence, we can obtain the Gibbs inequality.
+\begin{equation}
+    \mathrm{KL}(p||q) = \sum_x p(x) \log {p(x)}{q(x)} = -H(p) + H(p,q) \geq 0
+\end{equation}
+As a result, we have
+\begin{eqnarray}
+    -H_p(x) &\geq& -H_{p,q}(x) \\
+    I(X;Y) = H(X) - H_p(X|Y) &\geq& H(X) - H_{p,q}(X) = H_p(x) + E_p\big[\log q(x) \big]
+\end{eqnarray}
+
 \begin{theorem}
 (Data Processing Inequality). Let $X$, $Y$, $Z$ form the following Markov chain: $X\rightarrow Y\rightarrow Z$, then the following inequality holds:
 \begin{equation}
@@ -408,7 +438,7 @@ Stacking is an ensemble learning technique that combines multiple classification
     \label{fig:ensemble_stacking}
 \end{figure}
 
-The stacking ensemble is illustrated in Figure \ref{fig:ensemble_stacking}. It consists of k-NN, Random Forest and Naive Bayes base classifiers whose predictions are combined by Lostic Regression as a meta-classifier. We can see the blending of decision boundaries achieved by the stacking classifier. The figure also shows that stacking achieves higher accuracy than individual classifiers and based on learning curves, it shows no signs of overfitting.\\ 
+The stacking ensemble is illustrated in Figure \ref{fig:ensemble_stacking}. It consists of k-NN, Random Forest and Naive Bayes base classifiers whose predictions are combined by Logistic Regression as a meta-classifier. We can see the blending of decision boundaries achieved by the stacking classifier. The figure also shows that stacking achieves higher accuracy than individual classifiers and based on learning curves, it shows no signs of overfitting.\\ 
 
 
 

@@ -1,0 +1,42 @@
+\contentsline {section}{\numberline {1}Bayesian Non-parametrics}{3}{section.1}
+\contentsline {subsection}{\numberline {1.1}Gaussian Process}{3}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}Dirichlet Process}{6}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}Construction of the DP}{7}{subsection.1.3}
+\contentsline {subsubsection}{\numberline {1.3.1}Blackwell-MacQueen Urn Scheme}{7}{subsubsection.1.3.1}
+\contentsline {subsubsection}{\numberline {1.3.2}Chinese Restaurant Process}{8}{subsubsection.1.3.2}
+\contentsline {subsubsection}{\numberline {1.3.3}Stick-Breaking Construction}{8}{subsubsection.1.3.3}
+\contentsline {subsection}{\numberline {1.4}Hierarchical Dirichlet Process (HDP)}{9}{subsection.1.4}
+\contentsline {subsubsection}{\numberline {1.4.1}HDP Hidden Markov Models}{11}{subsubsection.1.4.1}
+\contentsline {subsection}{\numberline {1.5}Dependent Dirichlet Process (DDP)}{12}{subsection.1.5}
+\contentsline {subsection}{\numberline {1.6}Indian Buffet Process}{13}{subsection.1.6}
+\contentsline {subsection}{\numberline {1.7}Infinite Mixture of Experts}{14}{subsection.1.7}
+\contentsline {subsection}{\numberline {1.8}DPMM}{15}{subsection.1.8}
+\contentsline {subsection}{\numberline {1.9}Fitting a DPMM model}{17}{subsection.1.9}
+\contentsline {section}{\numberline {2}Variational Inference}{18}{section.2}
+\contentsline {subsection}{\numberline {2.1}Application: Topic Models}{22}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Application: Image Denoising in Ising Model}{25}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}Stochastic Variational Inference}{28}{subsection.2.3}
+\contentsline {section}{\numberline {3}Optimization}{32}{section.3}
+\contentsline {subsection}{\numberline {3.1}Simulated Annealing}{32}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Bayesian Optimization}{33}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Active Learning}{36}{subsection.3.3}
+\contentsline {subsubsection}{\numberline {3.3.1}Query Strategies}{36}{subsubsection.3.3.1}
+\contentsline {subsection}{\numberline {3.4}Submodular Optimization}{39}{subsection.3.4}
+\contentsline {subsubsection}{\numberline {3.4.1}Greedy Maximization}{40}{subsubsection.3.4.1}
+\contentsline {section}{\numberline {4}Information Planning}{43}{section.4}
+\contentsline {subsection}{\numberline {4.1}Introduction}{43}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Naive Bayes}{44}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Supervised LDA}{47}{subsection.4.3}
+\contentsline {subsection}{\numberline {4.4}Deep Neural Network}{49}{subsection.4.4}
+\contentsline {subsection}{\numberline {4.5}Discussion}{51}{subsection.4.5}
+\contentsline {section}{\numberline {5}Misc}{53}{section.5}
+\contentsline {subsection}{\numberline {5.1}Sequential Monte Carlo}{53}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Information Theory}{55}{subsection.5.2}
+\contentsline {subsubsection}{\numberline {5.2.1}Entropy}{55}{subsubsection.5.2.1}
+\contentsline {subsubsection}{\numberline {5.2.2}KL divergence}{57}{subsubsection.5.2.2}
+\contentsline {subsubsection}{\numberline {5.2.3}Mutual Information}{59}{subsubsection.5.2.3}
+\contentsline {subsection}{\numberline {5.3}Imbalanced Learning}{61}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Ensemble Methods}{62}{subsection.5.4}
+\contentsline {subsubsection}{\numberline {5.4.1}Bagging}{63}{subsubsection.5.4.1}
+\contentsline {subsubsection}{\numberline {5.4.2}Boosting}{64}{subsubsection.5.4.2}
+\contentsline {subsubsection}{\numberline {5.4.3}Stacking}{66}{subsubsection.5.4.3}

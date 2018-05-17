@@ -13,6 +13,10 @@
 \usepackage{subfigure, longtable, lscape, amssymb, amsfonts, rotating}
 \usepackage{caption}
 \usepackage{array}
+\usepackage{tabularx}
+\usepackage{hyperref}
+
+\hypersetup{pdftex, colorlinks=true, allcolors=blue}
 
 \floatstyle{plain}
 \newfloat{myalgo}{tbhp}{mya}
@@ -32,9 +36,12 @@
 \begin{document}
 
 \title{Research Journal}
-\date{March 9, 2018}
+\date{\today}
 \author{Vadim Smolyakov (vss@mit.edu)}
 \maketitle
+
+\tableofcontents
+\newpage
 
 %\abstract
 %\input{abstract.tex}
@@ -47,6 +54,9 @@
 
 \section{Optimization}
 \input{opt.tex}
+
+\section{Information Planning}
+\input{info_planning.tex}
 
 \section{Misc}
 \input{misc.tex}
