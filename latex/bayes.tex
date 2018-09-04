@@ -1,0 +1,81 @@
+This section focuses on derivation of Bayesian inference algorithms for a variety of graphical models. The purpose of this section to practice derivation and implementation of Bayesian inference algorithms focusing on Markov-Chain Monte-Carlo (MCMC) sampling techniques from high dimensional posterior distributions. 
+
+%TODO: note on markov chain techniques (why markov dependency between samples at all)
+
+
+\subsection{Gibbs Sampling}
+
+%TODO: see David Mackay's book on general intro to different sampling techniques / insighful explanations / pseudo-code (e.g. HMC) etc.
+
+\subsubsection{Latent Dirichlet Allocation}
+
+The LDA graphical model associates each word $w_{i,d}$ with a topic label $z_{i,d} \in \{1,2,...,K\}$. Each document is associated with topic proportions $\theta_d$. The topics $\phi_k$ are shared across all documents. The hyper-parameters $\alpha$ and $\eta$ define our rior knowledge of topic proportions and topics, respectively. The full generative model can be summarized as follows:
+\begin{eqnarray}
+    \theta_d | \alpha &\sim& \mathrm{Dir}(\alpha)\\
+    z_{i,d} | \theta_d &\sim& \mathrm{Cat}(\theta_d)\\
+    \phi_k | \eta &\sim& \mathrm{Dir}(\eta)\\
+    w_{i,d}|z_{i,d}=k,\phi &\sim& \mathrm{Cat}(\phi_k)
+\end{eqnarray}
+
+In order to derive Gibbs sampling updates, we focus on the joint distribution $p(w, z) = p(w|z)p(z)$ and we analytically integrate out $\theta$ and $\phi$ parameters. This is known as \textit{collapsed Gibbs sampling} and it tends to be more efficient because we are sampling in a lower dimensional space. The process of sampling $z$ and integrating out $\theta$ is known as \textit{Rao-Blackwellization} named after the following theorem:
+\begin{theorem}
+(Rao-Blackwell) Let $z$ and $\theta$ be dependent random variables and $f(z,\theta)$ be some scalar function, then:
+\begin{equation}
+    \mathrm{var}_{z,\theta}\big[f(z,\theta)\big] \geq \mathrm{var}_z \big[E_\theta [f(z,\theta) | z]\big]
+\end{equation}
+\end{theorem}
+\textbf{Joint distribution $p(w,z)$.}\newline
+We proceed with collapsed Gibbs sampling as follows:
+\begin{eqnarray}
+   p(w,z;\alpha,\eta) &=& p(w|z)p(z) = \int p(w,\phi|z)d\phi \times \int p(z,\theta)d\theta \nonumber \\ 
+   &=& \int p(w|\phi,z)p(\phi)d\phi \times \int p(z|\theta)p(\theta)d\theta = I_1 \times I_2 
+\end{eqnarray}
+Let's compute $I_2$ first. We know that,
+\begin{equation}
+    p(\theta) = \prod_{d=1}^{D} p(\theta_d|\alpha) = \prod_{d=1}^{D} \mathrm{Dir}(\theta_d|\alpha) = \prod_{d=1}^{D}\frac{1}{Z(\alpha)}\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1},~~~\mathrm{where}~~~ Z(\alpha) = \frac{\prod \Gamma(\alpha_i)}{\Gamma(\sum \alpha_i)}
+\end{equation}
+where we assume that $\alpha_1 = \alpha_2 = \cdots = \alpha_k = \alpha$. Similarly, let's write out the distribution for $p(z|\theta)$:
+\begin{eqnarray}
+    p(z|\theta) &=& \prod_{d=1}^{D}\prod_{j=1}^{D}p(z_{d,j}|\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{D}\mathrm{Cat}(\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{D}\theta_{d,k}^{x_{k}^{j}} \nonumber \\ 
+    &=& \prod_{d=1}^{D}\prod_{k=1}^{K}\theta_{d,k}^{\sum_{j=1}^{N_d}x_{k}^{j}} = \prod_{d=1}^{D}\prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}} 
+\end{eqnarray}
+where $n_{d,k}$ is a count of words in document $d$ assigned to topic $k$, and $x_{k}^{j}$ is a one-hot encoded vector indicating the presence of topic $k$ assigned to word $j$. Combining the equations above, we get the following expression for $I_2$:
+\begin{eqnarray}
+p(z) &=& \int p(z|\theta) p(\theta) d\theta = \int \bigg[\prod_{d=1}^{D}\prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}}\bigg] \bigg[\prod_{d=1}^{D}\frac{1}{Z(\alpha)}\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1}\bigg] d\theta \nonumber \\
+&=& \frac{1}{Z(\alpha)}\prod_{d=1}^{D}\bigg[ \int \prod_{k=1}^{K}\theta_{d,k}^{\alpha + n_{d,k} - 1} d\theta_d \bigg] = \frac{1}{Z(\alpha)}\prod_{d=1}^{D}Z(\alpha + n_{d,k})
+\end{eqnarray}
+where we used the identity for the Dirichlet distribution:
+\begin{equation}
+    \int \prod_{i=1}^{k} x_{i}^{\alpha_i - 1} dx = Z(\alpha) = \frac{\prod_{i=1}^{n}\Gamma(\alpha_i)}{\Gamma(\sum_i \alpha_i)}
+\end{equation}
+Let's compute $I_1$ next.
+\begin{equation}
+    p(\phi) = \prod_{k=1}^{K}p(\phi_k|\eta) = \prod_{k=1}^{K}\mathrm{Dir}(\phi_k|\eta) = \prod_{k=1}^{K}\frac{1}{Z(\eta)}\prod_{v=1}^{V}\phi_{k,v}^{\eta - 1}, ~~~\mathrm{where}~~~Z(\eta) = \frac{\prod \Gamma(\eta_i)}{\Gamma(\sum \eta_i)}
+\end{equation}
+where we assume that $\eta_1 = \eta_2 = \cdots = \eta_v = \eta$. Similarly, let's write out the distribution for $p(w|\phi, z)$:
+\begin{eqnarray}
+    p(w|\phi, z) &=& \prod_{d=1}^{D}\prod_{j=1}^{Nd} \prod_{k=1}^{K}p(w_{d,j}|\phi_k) =  \prod_{d=1}^{D}\prod_{j=1}^{Nd} \prod_{k=1}^{K} \mathrm{Cat}(\phi_k) \nonumber \\
+&=& \prod_{d=1}^{D}\prod_{j=1}^{Nd} \prod_{k=1}^{K} \prod_{v=1}^{V} \phi_{k,v}^{x_{v}^{d,j}} = \prod_{k=1}^{K} \prod_{v=1}^{V} \phi_{k,v}^{\sum_d \sum_j x_{v}^{d,j}} =  \prod_{k=1}^{K} \prod_{v=1}^{V} \phi_{k,v}^{n_{k,v}}
+\end{eqnarray}
+where $n_{k,v}$ is a count of the number of times word $v$ was assigned to topic $k$, and $x_{v}^{d,j}$ is a one-hot encoded vector indicating the presence of word $v$ in document $d$ at word location $j$. Combining the equations above, we get the following expression for $I_1$:
+\begin{eqnarray}
+    p(w|z) &=& \int p(w|\phi, z) p(\phi) d\phi = \int \bigg[\prod_{k=1}^{K} \prod_{v=1}^{V} \phi_{k,v}^{n_{k,v}}\bigg] \bigg[\prod_{k=1}^{K}\frac{1}{Z(\eta)}\prod_{v=1}^{V}\phi_{k,v}^{\eta - 1} \bigg] \nonumber \\
+&=& \frac{1}{Z(\eta)}\prod_{k=1}^{K}\bigg[\int \prod_{v=1}^{V}\phi_{k,v}^{n_{k,v}+\eta - 1}\bigg] = \frac{1}{Z(\eta)}\prod_{k=1}^{K}Z(\eta + n_{k,v})
+\end{eqnarray}
+Finally, taking a product of $I_1$ and $I_2$, we can compute the joint distribution:
+\begin{equation}
+    p(w, z) = p(w|z)p(z) = \bigg[\frac{1}{Z(\eta)}\prod_{k=1}^{K}Z(\eta + n_{k,v})\bigg] \bigg[\frac{1}{Z(\alpha)}\prod_{d=1}^{D}Z(\alpha + n_{d,k})\bigg]
+\end{equation}
+\textbf{Posterior of $\theta$ and $\phi$.}\newline
+We have integrated out $\theta$ and $\phi$ for collapsed Gibbs sampling, however, we still need to obtain the posterior distribution over these latent variables. In the derivation below, we condition on the assignments $z_{d,j}$ to compute the posterior distribution:
+\begin{eqnarray}
+    p(\theta_d|z_d) &\propto& p(z_d|\theta_d)p(\theta_d) = \prod_{j=1}^{N_d}p(z_{d,j}|\theta_d)\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1} = \prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}}\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1} \nonumber \\
+    &=& \prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}+\alpha - 1} \sim \mathrm{Dir}(\alpha + n_{d,k})
+\end{eqnarray}
+Similarly, $\phi_{k,v} \sim \mathrm{Dir}(\eta + n(k,v))$.\\\\
+\textbf{Collapsed Gibbs updates.}\newline
+
+\subsection{Metropolis-Hastings Sampling}
+\subsection{Slice sampling}
+\subsection{HMC sampling}
+

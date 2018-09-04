@@ -296,4 +296,77 @@ In supervised LDA model, the score variable is learned jointly with the topics. 
 In deep neural network setting we assume that computational expense of re-training the model from scratch is justified by the cost of obtaining the labels. From the training and validation loss in Figures \ref{fig:cnn_loss}, \ref{fig:lstm_loss}, we see no signs of over-fitting due regularization with dropout and weight decay. The validation loss plateaus early in the training indicating that model capacity can be increased in an attempt to achieve higher classification accuracy. Figures \ref{fig:cnn_acc}, \ref{fig:lstm_acc} show that CNN and LSTM model achieve comparable accuracy on the sentiment classification task with validation accuracy close to $55\%$.     
 
 Figures \ref{fig:cnn_acc_trials}, \ref{fig:lstm_acc_trials} show the benefit of information planning over the random basline. We can see that we achieve close to $1\%$ improvement in accuracy in the case of CNN and a relatively smaller improvement in the case of LSTM, even thought LSTM achieves $2\%$ higher held-out test accuracy in the end. It's also interesting to see, the decrease in test label entropy as shown in Figures \ref{fig:cnn_entropy_trials}, \ref{fig:lstm_entropy_trials}, where as expected the uncertainty sampling leads to highest reduction in entropy. 
- 
+
+\subsection{Set Cover Problem}
+
+We consider the problem of data driven sensor placement subject to placement constraints. In particular, we assume that we have $n$ sub-sets of sensors that we would like to use to cover
+$m$ potential locations. The number of locations $m$ can be obtained as a discretization of the input space. We assume Gaussian Process (GP) environment in which our sensor measurements form a jointly Gaussian distribution and every additional sub-set of sensors reduces the uncertainty.\\
+
+This is known as a set cover problem \cite{SkienaBook}, in which we would like to use minimum number of sub-sets whose union is equal to the universal set. A variation of this problem known as \textit{max-k-cover} limits the number of possible sub-sets to $k$.\\
+
+Greedy algorithms can be used to maximize the information gain objective with non-uniform cost\cite{Kraus2008}. However, greedy algorithms can fail to find global optima for certain inputs. Our claim is that simulated annealing (SA) can perform better than greedy. We study the computational and accuracy trade-offs of the two algorithms for the \textit{max-k-cover} problem. 
+
+%TODO: consider extensions to non-GPs, comparison with integer programming, read up on matroid optimization, think of different applications (e.g. observing genome), what structure is in the problem I'm trying to solve?
+
+\subsubsection{Greedy Algorithm}
+
+There exist performance guarantees for greedy algorithms with submodular objective function \cite{Kraus2008}. We select an increment in mutual information (MI) as our objective because it satisfies submodularity and improves upon the entropy maximization objective. Let $A$ be a set of already selected sensor locations, $y$ be a subset under consideration and $\bar{A}$ be a set representing unselected locations, i.e. $V = A \cup y \cup \bar{A}$. Then, define:
+\begin{equation}
+    F_{MI}(A) = I(X_{A}; X_{V\setminus A}) = H(X_{V\setminus A}) - H(X_{V\setminus A}|X_A)
+\end{equation}
+i.e. we consider maximizing mutual information between a set of selected sensors $X_A$ and the remaining sensor locations $X_{V\setminus A}$. Then, the incremental MI can be written as:
+\begin{eqnarray}
+   F_{MI}(A\cup \{y\}) - F_{MI}(A) &=& H(X_A\cup X_y) - H(X_A\cup X_y|X_{\bar{A}}) - \big[H(X_A) - H(X_A|X_{\bar{A}}\cup X_y) \big] \nonumber \\
+    &=& H(X_A\cup X_y) - H(X_V) + H(X_{\bar{A}}) - \big[H(X_A) - H(X_V) + H(X_{\bar{A}}\cup X_{y}) \big] \nonumber \\
+    &=& H(X_A\cup X_y) - H(X_A) + H(X_{\bar{A}}) - H(X_{\bar{A}}\cup X_y) \nonumber \\
+    &=& H(X_y|X_A) - H(X_y|X_{\bar{A}})
+\end{eqnarray}
+
+We can compute conditional entropies in closed form for the multivariate Gaussian distribution using the rules of conditioning \cite{BishopPRML}:
+
+\begin{equation}
+H(X_y|X_A) = \frac{1}{2}\log\bigg[(2\pi e)^{|y|}\det \Sigma_{X_y|X_A} \bigg] = \frac{1}{2}\log \det \Sigma_{X_y|X_A} + \mathrm{const}
+\end{equation}
+
+Given GP posterior mean and variance equations with mean $\mu$ and kernel $K$ \cite{MurphyML}:
+\begin{eqnarray}
+   \mu_{y|A} &=& \mu_y + \Sigma_{yA}\Sigma_{AA}^{-1}(x_A - \mu_A) \\
+   \Sigma_{X_y|X_A} &=& K(y,y) - \Sigma_{yA}\Sigma_{AA}^{-1}\Sigma_{Ay}
+\end{eqnarray}
+we can express our objective function as follows:
+\begin{eqnarray}
+   F_{MI}(A\cup \{y\}) - F_{MI}(A) &=& H(X_y|X_A) - H(X_Y|X_{\bar{A}}) \nonumber\\
+   &=&\frac{1}{2}\log \det \Sigma_{X_y|X_A} - \frac{1}{2}\log \det \Sigma_{X_y|X_{\bar{A}}} \nonumber \\
+   &=&\frac{1}{2}\log \frac{\det |K(y,y) - \Sigma_{yA}\Sigma_{AA}^{-1}\Sigma_{Ay}|}{\det |K(y,y)-\Sigma_{y\bar{A}}\Sigma_{\bar{A}\bar{A}}^{-1}\Sigma_{\bar{A}y}|}
+\end{eqnarray}
+
+We summarize the greedy algorithm for \textit{max-k-cover} in Algorithm \ref{alg:max_k_cover_greedy}. The complexity of the greedy algorithm is $\mathcal{O}(n^4 k)$: the covariance inversion step $\mathcal{O}(n^3)$ is computed for every $\mathcal{O}(n)$ sub-set $y$, $\mathcal{O}(k)$ times.
+\begin{algorithm}[t]
+\caption{Greedy max-k-cover}
+\label{alg:max_k_cover_greedy}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} $V$, $k$, $\Sigma_{VV}$ 
+\STATE \textbf{Output:} sensor placement $A$ 
+\STATE $A=\{\}$
+\STATE \textbf{for} $j = 1,2,...,k$ \textbf{do}
+\STATE ~~~ \textbf{for} $y \in V\setminus A$ \textbf{do}
+\STATE ~~~ ~~~ $\delta_y = \frac{1}{2}\log \frac{\det |K(y,y) - \Sigma_{yA}\Sigma_{AA}^{-1}\Sigma_{Ay}|}{\det |K(y,y)-\Sigma_{y\bar{A}}\Sigma_{\bar{A}\bar{A}}^{-1}\Sigma_{\bar{A}y}|}$
+\STATE ~~~ \textbf{end for}
+\STATE ~~~ $y = \arg \max_{y \in V\setminus A}\delta_y$ 
+\STATE ~~~ $A = A \cup {y}$
+\STATE \textbf{end for}
+\end{algorithmic}
+\end{algorithm}
+Note, that we can compute the covariance matrix by choosing a kernel function that takes the coordinates of $V$ sensors as input.
+%TODO: talk about greedy algorithm guarantees for set cover problem.
+%TODO: include cost into the objective function
+
+\subsubsection{Simulated Annealing}
+
+\subsubsection{Dynamic Programming}
+
+
+
+
+
+
