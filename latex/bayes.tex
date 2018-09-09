@@ -2,6 +2,11 @@ This section focuses on derivation of Bayesian inference algorithms for a variet
 
 %TODO: note on markov chain techniques (why markov dependency between samples at all)
 
+\subsection{MAP / MLE}
+\subsubsection{Naive Bayes}
+
+\subsection{Expectation Maximization (EM)}
+\subsubsection{Gaussian Mixture Model (GMM)}
 
 \subsection{Gibbs Sampling}
 
@@ -36,7 +41,7 @@ Let's compute $I_2$ first. We know that,
 \end{equation}
 where we assume that $\alpha_1 = \alpha_2 = \cdots = \alpha_k = \alpha$. Similarly, let's write out the distribution for $p(z|\theta)$:
 \begin{eqnarray}
-    p(z|\theta) &=& \prod_{d=1}^{D}\prod_{j=1}^{D}p(z_{d,j}|\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{D}\mathrm{Cat}(\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{D}\theta_{d,k}^{x_{k}^{j}} \nonumber \\ 
+    p(z|\theta) &=& \prod_{d=1}^{D}\prod_{j=1}^{N_d}p(z_{d,j}|\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{N_d}\mathrm{Cat}(\theta_d) = \prod_{d=1}^{D}\prod_{j=1}^{N_d}\theta_{d,k}^{x_{k}^{j}} \nonumber \\ 
     &=& \prod_{d=1}^{D}\prod_{k=1}^{K}\theta_{d,k}^{\sum_{j=1}^{N_d}x_{k}^{j}} = \prod_{d=1}^{D}\prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}} 
 \end{eqnarray}
 where $n_{d,k}$ is a count of words in document $d$ assigned to topic $k$, and $x_{k}^{j}$ is a one-hot encoded vector indicating the presence of topic $k$ assigned to word $j$. Combining the equations above, we get the following expression for $I_2$:
@@ -72,10 +77,31 @@ We have integrated out $\theta$ and $\phi$ for collapsed Gibbs sampling, however
     p(\theta_d|z_d) &\propto& p(z_d|\theta_d)p(\theta_d) = \prod_{j=1}^{N_d}p(z_{d,j}|\theta_d)\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1} = \prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}}\prod_{k=1}^{K}\theta_{d,k}^{\alpha - 1} \nonumber \\
     &=& \prod_{k=1}^{K}\theta_{d,k}^{n_{d,k}+\alpha - 1} \sim \mathrm{Dir}(\alpha + n_{d,k})
 \end{eqnarray}
-Similarly, $\phi_{k,v} \sim \mathrm{Dir}(\eta + n(k,v))$.\\\\
+Similarly, $\phi_{k,v} \sim \mathrm{Dir}(\eta + n_{k,v})$.\\\\
 \textbf{Collapsed Gibbs updates.}\newline
+We need to compute the full conditional distribution $p(z_i|z_{-i}, w)$. We can proceed as follows:
+\begin{eqnarray}
+    p(z_i=k|z_{-i}, w) &=& \frac{p(z_i, z_{-i}, w)}{p(z_{-i}, w)} = \frac{p(w|z)p(z)}{p(z_{-i}, w_{-i}, w_i)} = \frac{p(w|z)p(z)}{p(w_{-i}|z_{-i},w_i)p(z_{-i})p(w_i)} \nonumber \\
+    &\propto& \frac{p(w|z)p(z)}{p(w_{-i}|z_{-i})p(z_{-i})} = \frac{\prod_{k=1}^{K}Z(\eta + n_{k,v})}{\prod_{k=1}^{K}Z(\eta + n_{-k,v})} \times \frac{\prod_{d=1}^{D}Z(\alpha + n_{d,k})}{\prod_{d=1}^{D}Z(\alpha + n_{d,-k})}
+\end{eqnarray}
+For all docs other than $d=d^{\prime}$, the numerator and denominator of the second factor are exactly the same:
+\begin{eqnarray}
+     \frac{\prod_{d=1}^{D}Z(\alpha + n_{d,k})}{\prod_{d=1}^{D}Z(\alpha + n_{d,-k})} &=& \frac{Z(\alpha + n_{d^{\prime}, k})}{Z(\alpha + n_{d^{\prime}, -k})} = \frac{\prod_{k=1}^{K}\Gamma(\alpha + n_{d^{\prime}, k})}{\prod_{k=1}^{K}\Gamma(\alpha + n_{d^{\prime}, -k})} \times \frac{\Gamma(\sum_{k=1}^{K}\alpha + n_{d^{\prime},-k})}{\Gamma(\sum_{k=1}^{K}\alpha + n_{d^{\prime}, k})} \nonumber \\\ &=& \frac{\Gamma(\alpha + n_{d^{\prime}, -k^{\prime}} + 1)}{\Gamma(\alpha + n_{d^{\prime}, -k^{\prime}})} \times \frac{\Gamma(\sum_{k=1}^{K}\alpha + n_{d^{\prime},-k})}{\Gamma(\sum_{k=1}^{K}\alpha + n_{d^{\prime}, -k} + 1)} \nonumber \\
+   &=& \frac{\alpha + n_{d^{\prime}, -k^{\prime}}}{\sum_{k=1}^{K}\alpha + n_{d^{\prime},-k}}
+\end{eqnarray}
+where we used the identity: $\Gamma(x+1) = x! = x(x-1)! = x\Gamma(x)$. Similarly, we can simplify the first factor to:
+\begin{equation}
+    \frac{\prod_{k=1}^{K}Z(\eta + n_{k,v})}{\prod_{k=1}^{K}Z(\eta + n_{-k,v})} = \frac{\eta + n_{-k^{\prime}, v^{\prime}}}{\sum_{v=1}^{V}\eta + n_{-k^{\prime}, v}}
+\end{equation}
+Putting the two factors together, our full conditional distribution is:
+\begin{equation}
+    p(z_i = k^{\prime}|z_{-i}, w) \propto \bigg[ \frac{\eta + n_{-k^{\prime},v^{\prime}}}{\sum_{v=1}^{V}\eta + n_{-k^{\prime}, v}} \bigg] \bigg[\frac{\alpha + n_{d^{\prime}, -k^{\prime}}}{\sum_{k=1}^{K}\alpha + n_{d^{\prime},-k}} \bigg]
+\end{equation}
+In the expression above, the first ratio is a probability of word $w_i$ (for which we are sampling the label $z_i$) under topic $k^{\prime}$ and the second ratio is the probability of topic $k^{\prime}$ in document $d^{\prime}$. 
 
-\subsection{Metropolis-Hastings Sampling}
+\subsection{Metropolis-Hastings (MH) Sampling}
+\subsubsection{Gaussian Mixture Model (GMM)}
+
 \subsection{Slice sampling}
 \subsection{HMC sampling}
 
