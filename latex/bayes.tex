@@ -2,8 +2,67 @@ This section focuses on derivation of Bayesian inference algorithms for a variet
 
 %TODO: note on markov chain techniques (why markov dependency between samples at all)
 
-\subsection{MAP / MLE}
+\subsection{MLE / MAP}
 \subsubsection{Naive Bayes}
+Consider discrete-valued features $x \in \{1,...,K\}^{D}$ where $D$ is the number of features and $K$ is the number of distinct values they can take on. The Naive Bayes model assumes conditional independence of random variables $x$ given the class labels $y$, i.e.
+\begin{equation}
+    p(x|y=c, \theta) = \prod_{j=1}^{D} p(x_j|y=c, \theta_{jc})
+\end{equation}
+The class conditional density above can take several forms: (1) Gaussian $N(x_j|\mu_{jc}, \sigma_{jc}^{2})$, (2) Bernoulli $\mathrm{Ber}(x_j|\mu_jc)$, (3) Categorical $\mathrm{Cat}(x_j|\mu_{jc})$.\\
+
+Let's assume that we have a Bernoulli class conditional density, which means that $x_{i,j} \sim \mathrm{Ber}(x_{i,j}|\theta_{jc})$ are binary indicators for presence ($x_{i,j} = 1$) of word $j$ in document $i$ or absence ($x_{i,j} = 0$) of the word, parameterized by $\theta_{jc}$. Note that in the context of Naive Bayes classification of text, a data point $x_i = \{x_{i,1},...,x_{i,j},...,x_{i,D}\}$ is a document with $j=\{1,...,D\}$ features (vocabulary words) and an associated document class label $y_i$.\\
+
+We can write down the joint as follows:
+\begin{equation}
+    p(x_i, y_i|\theta) = p(y_i|\pi) \prod_{j=1}^{D}p(x_{ij}|y_i=c,\theta_{jc}) = \prod_{c=1}^{C}\pi_{c}^{1[y_i = c]} \prod_{j=1}^{D}\prod_{c=1}^{C}p(x_{ij}|y_i=c,\theta_{jc})^{1[y_i = c]}
+\end{equation}
+As a result, the log-likelihood for the entire corpus is:
+\begin{eqnarray}
+    \log p(D|\theta) &=& \log \prod_{i=1}^{n} p(x_i, y_i|\theta) = \sum_{i=1}^{n} \log p(x_i, y_i|\theta) \nonumber \\
+&=& \sum_{i=1}^{N}\sum_{c=1}^{C}1[y_i = c]\log \pi_c + \sum_{i=1}^{n}\sum_{j=1}^{D}\sum_{c=1}^{C}1[y_i = c]\log p(x_{ij}|y_i = c, \theta_{jc}) \nonumber \\
+&=& \sum_{c=1}^{C}N_c \log \pi_c + \sum_{j=1}^{D} \sum_{c=1}^{C}\sum_{i:y_i = c} \log \mathrm{Ber}(x_{ij}|\theta_{jc}) 
+\end{eqnarray}
+
+There is a problem if some of the words have zero counts. To solve this problem, we can introduce a prior on our latent variables that acts as $\alpha$-smoothing. For simplicity, we'll use a factored prior:
+\begin{equation}
+     p(\theta) = p(\pi)\prod_{j=1}^{D}\prod_{c=1}^{C}p(\theta_{jc}) = \mathrm{Dir}(\alpha_1,...,\alpha_C)\prod_{j=1}^{D}\prod_{c=1}^{C}\mathrm{Beta}(\beta_0, \beta_1)
+\end{equation}
+Combining the factored prior with the factored likelihood, we get:
+\begin{eqnarray}
+    p(\theta|D) &=& p(\pi|D)\prod_{j=1}^{D}\prod_{c=1}^{C}p(\theta_{jc}|D) \nonumber \\
+    &=& \mathrm{Dir(\pi|N_1+\alpha_1,...,N_C+\alpha_C)}\prod_{j=1}^{D}\prod_{c=1}^{C}\mathrm{Beta}(\theta_{jc}|(N_c - N_{jc}) + \beta_0, N_{jc} + \beta_1)
+\end{eqnarray}
+We can use Calculus to find MAP estimates of model parameters. For $\pi$, we want to maximize the Lagrangian:
+\begin{equation}
+    l(\pi, \lambda) = \log \prod_{c=1}^{C}\pi_{c}^{\alpha_k + N_k - 1} + \lambda \big(1-\sum_c \pi_c \big) = \sum_{c=1}^{C}(\alpha_c + N_c - 1) \log \pi_c + \lambda \big(1-\sum_c \pi_c \big)
+\end{equation}
+Taking partial derivative with respect to $\pi_c$, we get:
+\begin{equation}
+   \frac{\partial l(\pi, \lambda)}{\partial \pi_c} = \frac{\alpha_c + N_c - 1}{\pi_c} - \lambda = 0 \implies \lambda \pi_c = \alpha_c + N_c - 1
+\end{equation}
+Using the sum to 1 constraint:
+\begin{equation}
+    \lambda \sum_{c=1}^{C} \pi_c = \sum_{c=1}^{C} \alpha_c + N_c - 1 \implies \lambda = \alpha_0 +N - C
+\end{equation}
+Therefore, the MAP estimate is:
+\begin{equation}
+    \pi_c = \frac{N_c + \alpha_c - 1}{N + \sum_c \alpha_c - C}
+\end{equation}
+We can use a similar argument to derive the MAP estimate of $\theta_{jc}$. Taking the log of the posterior and isolating the term of interest, we can find the mode of the Beta distribution using Calculus and as a result the MAP estiamte is:
+\begin{equation}
+\theta_{jc} = \frac{N_c - N_{jc} + \beta_0 - 1}{N_c - N_{jc} + \beta_0 + N_{jc} + \beta_1 - 2} = \frac{N_c - N_{jc} + \beta_0 - 1}{N_c +\beta_0 + \beta_1 - 2}
+\end{equation}
+Note, if we set $\beta_0 = \beta_1 = 1$, we get the MLE estimate and if we set $\beta_0 = \beta_1 = 2$, we get add 1 Laplacian smoothing.\\
+
+Learning the model parameters is the first step. We would like to next use the learned parameters to make a prediction about the class label of a test document. Using Bayes rule, we have: 
+\begin{equation}
+    p(y=c|x, D) \propto p(y=c|D) \prod_{j=1}^{D}p(x_j|y=c, D) 
+\end{equation}
+Substituting the distributions and taking the log, we get:
+\begin{equation}
+    \log p(y=c|x, D) \propto \log \hat{\pi}_c + \sum_{j=1}^{D}\bigg(1[x_{ij} = 1]\log \hat{\theta}_{jc} + 1[x_{ij} = 0]\log(1-\hat{\theta}_{jc})\bigg)
+\end{equation}
+Thus, we can plug-in the MAP estimates $\hat{\pi}_c$ and $\hat{\theta_{jc}}$ in the expression above to compute the log probability of class label for a new document.
 
 \subsection{Expectation Maximization (EM)}
 
@@ -106,6 +165,10 @@ where $\delta(w, w_i)$ is an indicator which is equal to $1$ when $w=w_i$ and $0
 \end{eqnarray}
 where $n_d$ is the total number of words in document $d$ and $V$ is our vocabulary. Thus, we can initialize $\theta^{(0)}$ at random and iterate between the E-step and the M-step until convergence. The EM algorithm may require several restarts to avoid local optima. As a result of several iterations, the log-likelihood of observed words under the topic model will increase.    
 
+\subsubsection{Bayesian Linear Regression}
+
+%TODO: see section 9.3.4 Bishop for warm start
+
 \subsection{Gibbs Sampling}
 
 %TODO: see David Mackay's book on general intro to different sampling techniques / insighful explanations / pseudo-code (e.g. HMC) etc.
@@ -203,4 +266,4 @@ In the expression above, the first ratio is a probability of word $w_i$ (for whi
 \subsection{Slice sampling}
 \subsection{HMC sampling}
 
-
+%see Bishop for variational inference
