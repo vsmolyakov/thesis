@@ -18,13 +18,14 @@
 \contentsline {subsection}{\numberline {2.2}Expectation Maximization (EM)}{21}{subsection.2.2}
 \contentsline {subsubsection}{\numberline {2.2.1}Gaussian Mixture Model (GMM)}{22}{subsubsection.2.2.1}
 \contentsline {subsubsection}{\numberline {2.2.2}Latent Dirichlet Allocation (LDA)}{23}{subsubsection.2.2.2}
-\contentsline {subsubsection}{\numberline {2.2.3}Bayesian Linear Regression}{24}{subsubsection.2.2.3}
 \contentsline {subsection}{\numberline {2.3}Gibbs Sampling}{24}{subsection.2.3}
 \contentsline {subsubsection}{\numberline {2.3.1}Latent Dirichlet Allocation}{24}{subsubsection.2.3.1}
 \contentsline {subsection}{\numberline {2.4}Metropolis-Hastings (MH) Sampling}{27}{subsection.2.4}
 \contentsline {subsubsection}{\numberline {2.4.1}Gaussian Mixture Model (GMM)}{27}{subsubsection.2.4.1}
 \contentsline {subsection}{\numberline {2.5}Slice sampling}{27}{subsection.2.5}
 \contentsline {subsection}{\numberline {2.6}HMC sampling}{27}{subsection.2.6}
+\contentsline {subsection}{\numberline {2.7}Annealed Importance Sampling}{27}{subsection.2.7}
+\contentsline {subsubsection}{\numberline {2.7.1}AIS algorithm}{27}{subsubsection.2.7.1}
 \contentsline {section}{\numberline {3}Variational Inference}{28}{section.3}
 \contentsline {subsection}{\numberline {3.1}Application: Topic Models}{30}{subsection.3.1}
 \contentsline {subsection}{\numberline {3.2}Application: Image Denoising in Ising Model}{34}{subsection.3.2}

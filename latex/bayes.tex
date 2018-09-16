@@ -165,8 +165,7 @@ where $\delta(w, w_i)$ is an indicator which is equal to $1$ when $w=w_i$ and $0
 \end{eqnarray}
 where $n_d$ is the total number of words in document $d$ and $V$ is our vocabulary. Thus, we can initialize $\theta^{(0)}$ at random and iterate between the E-step and the M-step until convergence. The EM algorithm may require several restarts to avoid local optima. As a result of several iterations, the log-likelihood of observed words under the topic model will increase.    
 
-\subsubsection{Bayesian Linear Regression}
-
+%\subsubsection{Bayesian Linear Regression}
 %TODO: see section 9.3.4 Bishop for warm start
 
 \subsection{Gibbs Sampling}
@@ -267,3 +266,26 @@ In the expression above, the first ratio is a probability of word $w_i$ (for whi
 \subsection{HMC sampling}
 
 %see Bishop for variational inference
+\subsection{Annealed Importance Sampling}
+Annealed Importance Sampling (AIS) is a method that combines independent importanc sampling with Markov Chain methods. It can be used to sample from multi-modal posterior distributions as well as to estimate ratios of normalizing constants (used in Bayesian model selection).
+
+\subsubsection{AIS algorithm}
+%TODO: describe the basic algorithm
+
+AIS can be seen as importance sampling in an extended $z$-space $\{z_0,...,z_{n-1}\}$.\\
+%TODO: notes in my notebook
+
+AIS can be used to approximate the ratio of normalizing constants. Suppose, we are interested in computed an expected value of $f(x)$. We can proceed as follows:
+\begin{eqnarray}
+    E[f(x)] &=& \int f(x)p(x)dx = \int f(x)\frac{q(x)}{q(x)}p(x)dx = \frac{Z_q}{Z_p}\int f(x)\frac{\tilde{p}(x)}{\tilde{q}(x)}q(x)dx \nonumber \\
+    &=& \frac{Z_q}{Z_p}\frac{1}{S}\sum_{s=1}^{S}\tilde{w}(s)f(s),~\mathrm{where}~s\sim q(x)~\mathrm{and}~\tilde{w}(s) = \frac{\tilde{p}(s)}{\tilde{q}(s)}
+\end{eqnarray}
+We can compute the ratio of normalizing constants as follows:
+\begin{equation}
+    \frac{Z_p}{Z_q} = \frac{1}{Z_q}\int \tilde{p}(x)dx = \frac{1}{Z_q}\int \frac{\tilde{p}(x)}{q(x)}q(x)dx = \int \frac{\tilde{p}(x)}{\tilde{q}(x)}q(x)dx = \frac{1}{S}\sum_{s=1}^{S}\tilde{w}(s)
+\end{equation}
+Combining the two expression above, we get:
+\begin{equation}
+    E[f] = \frac{Z_q}{Z_p}\frac{1}{S}\sum_{s=1}^{S}\tilde{w}(s)f(s) = \frac{\frac{1}{S}\sum_s \tilde{w}(s)f(s)}{\frac{1}{S}\sum_s \tilde{w}(s)} = \sum_{s=1}^{S}w(s)f(s)
+\end{equation}
+
