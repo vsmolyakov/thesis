@@ -26,35 +26,35 @@
 \contentsline {subsection}{\numberline {2.6}HMC sampling}{27}{subsection.2.6}
 \contentsline {subsection}{\numberline {2.7}Annealed Importance Sampling}{27}{subsection.2.7}
 \contentsline {subsubsection}{\numberline {2.7.1}AIS algorithm}{27}{subsubsection.2.7.1}
-\contentsline {section}{\numberline {3}Variational Inference}{28}{section.3}
-\contentsline {subsection}{\numberline {3.1}Application: Topic Models}{30}{subsection.3.1}
-\contentsline {subsection}{\numberline {3.2}Application: Image Denoising in Ising Model}{34}{subsection.3.2}
-\contentsline {subsection}{\numberline {3.3}Stochastic Variational Inference}{36}{subsection.3.3}
-\contentsline {section}{\numberline {4}Optimization}{42}{section.4}
-\contentsline {subsection}{\numberline {4.1}Simulated Annealing}{42}{subsection.4.1}
-\contentsline {subsection}{\numberline {4.2}Bayesian Optimization}{42}{subsection.4.2}
-\contentsline {subsection}{\numberline {4.3}Active Learning}{45}{subsection.4.3}
-\contentsline {subsubsection}{\numberline {4.3.1}Query Strategies}{46}{subsubsection.4.3.1}
-\contentsline {subsection}{\numberline {4.4}Submodular Optimization}{49}{subsection.4.4}
-\contentsline {subsubsection}{\numberline {4.4.1}Greedy Maximization}{50}{subsubsection.4.4.1}
-\contentsline {section}{\numberline {5}Information Planning}{53}{section.5}
-\contentsline {subsection}{\numberline {5.1}Introduction}{53}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}Naive Bayes}{54}{subsection.5.2}
-\contentsline {subsection}{\numberline {5.3}Supervised LDA}{56}{subsection.5.3}
-\contentsline {subsection}{\numberline {5.4}Deep Neural Network}{59}{subsection.5.4}
-\contentsline {subsection}{\numberline {5.5}Discussion}{62}{subsection.5.5}
-\contentsline {subsection}{\numberline {5.6}Set Cover Problem}{63}{subsection.5.6}
-\contentsline {subsubsection}{\numberline {5.6.1}Greedy Algorithm}{63}{subsubsection.5.6.1}
-\contentsline {subsubsection}{\numberline {5.6.2}Simulated Annealing}{64}{subsubsection.5.6.2}
-\contentsline {subsubsection}{\numberline {5.6.3}Dynamic Programming}{64}{subsubsection.5.6.3}
-\contentsline {section}{\numberline {6}Misc}{65}{section.6}
-\contentsline {subsection}{\numberline {6.1}Sequential Monte Carlo}{65}{subsection.6.1}
-\contentsline {subsection}{\numberline {6.2}Information Theory}{67}{subsection.6.2}
-\contentsline {subsubsection}{\numberline {6.2.1}Entropy}{67}{subsubsection.6.2.1}
-\contentsline {subsubsection}{\numberline {6.2.2}KL divergence}{69}{subsubsection.6.2.2}
-\contentsline {subsubsection}{\numberline {6.2.3}Mutual Information}{71}{subsubsection.6.2.3}
-\contentsline {subsection}{\numberline {6.3}Imbalanced Learning}{73}{subsection.6.3}
-\contentsline {subsection}{\numberline {6.4}Ensemble Methods}{74}{subsection.6.4}
-\contentsline {subsubsection}{\numberline {6.4.1}Bagging}{74}{subsubsection.6.4.1}
-\contentsline {subsubsection}{\numberline {6.4.2}Boosting}{76}{subsubsection.6.4.2}
-\contentsline {subsubsection}{\numberline {6.4.3}Stacking}{77}{subsubsection.6.4.3}
+\contentsline {section}{\numberline {3}Variational Inference}{29}{section.3}
+\contentsline {subsection}{\numberline {3.1}Application: Topic Models}{31}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Application: Image Denoising in Ising Model}{35}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Stochastic Variational Inference}{37}{subsection.3.3}
+\contentsline {section}{\numberline {4}Optimization}{43}{section.4}
+\contentsline {subsection}{\numberline {4.1}Simulated Annealing}{43}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Bayesian Optimization}{43}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Active Learning}{46}{subsection.4.3}
+\contentsline {subsubsection}{\numberline {4.3.1}Query Strategies}{47}{subsubsection.4.3.1}
+\contentsline {subsection}{\numberline {4.4}Submodular Optimization}{50}{subsection.4.4}
+\contentsline {subsubsection}{\numberline {4.4.1}Greedy Maximization}{51}{subsubsection.4.4.1}
+\contentsline {section}{\numberline {5}Information Planning}{54}{section.5}
+\contentsline {subsection}{\numberline {5.1}Introduction}{54}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Naive Bayes}{55}{subsection.5.2}
+\contentsline {subsection}{\numberline {5.3}Supervised LDA}{57}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Deep Neural Network}{60}{subsection.5.4}
+\contentsline {subsection}{\numberline {5.5}Discussion}{63}{subsection.5.5}
+\contentsline {subsection}{\numberline {5.6}Set Cover Problem}{64}{subsection.5.6}
+\contentsline {subsubsection}{\numberline {5.6.1}Greedy Algorithm}{64}{subsubsection.5.6.1}
+\contentsline {subsubsection}{\numberline {5.6.2}Simulated Annealing}{65}{subsubsection.5.6.2}
+\contentsline {subsubsection}{\numberline {5.6.3}Dynamic Programming}{65}{subsubsection.5.6.3}
+\contentsline {section}{\numberline {6}Misc}{66}{section.6}
+\contentsline {subsection}{\numberline {6.1}Sequential Monte Carlo}{66}{subsection.6.1}
+\contentsline {subsection}{\numberline {6.2}Information Theory}{68}{subsection.6.2}
+\contentsline {subsubsection}{\numberline {6.2.1}Entropy}{68}{subsubsection.6.2.1}
+\contentsline {subsubsection}{\numberline {6.2.2}KL divergence}{70}{subsubsection.6.2.2}
+\contentsline {subsubsection}{\numberline {6.2.3}Mutual Information}{72}{subsubsection.6.2.3}
+\contentsline {subsection}{\numberline {6.3}Imbalanced Learning}{74}{subsection.6.3}
+\contentsline {subsection}{\numberline {6.4}Ensemble Methods}{75}{subsection.6.4}
+\contentsline {subsubsection}{\numberline {6.4.1}Bagging}{75}{subsubsection.6.4.1}
+\contentsline {subsubsection}{\numberline {6.4.2}Boosting}{77}{subsubsection.6.4.2}
+\contentsline {subsubsection}{\numberline {6.4.3}Stacking}{78}{subsubsection.6.4.3}

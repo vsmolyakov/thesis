@@ -267,15 +267,65 @@ In the expression above, the first ratio is a probability of word $w_i$ (for whi
 
 %see Bishop for variational inference
 \subsection{Annealed Importance Sampling}
-Annealed Importance Sampling (AIS) is a method that combines independent importanc sampling with Markov Chain methods. It can be used to sample from multi-modal posterior distributions as well as to estimate ratios of normalizing constants (used in Bayesian model selection).
+Annealed Importance Sampling (AIS) is a method that combines independent importance sampling with Markov chain methods. It can be used to sample from multi-modal posterior distributions as well as to estimate ratios of normalizing constants (used in Bayesian model selection).
 
 \subsubsection{AIS algorithm}
-%TODO: describe the basic algorithm
 
-AIS can be seen as importance sampling in an extended $z$-space $\{z_0,...,z_{n-1}\}$.\\
-%TODO: notes in my notebook
+Consider a sequence of distributions $p_n(x), p_{n-1}(x),...,p_1(x), p_0(x)$, where $p_0(x)$ is our target distribution of interest (a posterior) and $p_n(x)$ is a starting distribution (a prior). Our goals is to draw samples from a multi-modal $p_0(x)$ by using a sequence of intermediate distributions $p_j(x)$:
+\begin{equation}
+    p_j(x) = p_0(x)^{\beta_j}p_n(x)^{1-\beta_j},~~~\mathrm{where}~~~ 0 = \beta_n < \beta_{n-1} < \cdots < \beta_{0} = 1
+\end{equation}
+We assume that we can draw samples from intermediate distributions $p_j(x)$ via a sequence of Markov chains $T_j(x, x^{\prime})$ that model a transition from state $x$ to $x^{\prime}$. $T_j(x, x^{\prime})$ can be any of the Markov chain methods that satisfy detailed balance, i.e. Gibbs, Slice or Metropolis-Hastings (MH) samplers. The AIS algorithm can be summarized as follows:
 
-AIS can be used to approximate the ratio of normalizing constants. Suppose, we are interested in computed an expected value of $f(x)$. We can proceed as follows:
+\begin{algorithm}
+\caption{Annealed Importance Sampling (AIS) \cite{Neal1998}}
+\label{alg:ais}
+\begin{algorithmic}[1]
+\STATE Define a target distribution $p_0(x)$, a prior $p_n(x)$, and an intermediate $p_j(x)$ 
+\STATE Define a range of $\beta$ values: $0 = \beta_n < \beta_{n-1} < \cdots < \beta_{0} = 1$
+\STATE Define the transitions $T_j(x,x^{\prime})$ 
+\STATE \textbf{for} sample $s = 1$ to $S$ \textbf{do} 
+\STATE ~~~ init $w = 1$
+\STATE ~~~ sample $x_{prev} \sim p_n(x)$
+\STATE ~~~ \textbf{for} $j=n-1$ to $1$:
+\STATE ~~~ ~~~ $x_{new} \sim T_j(x_{prev}, \cdot)$ 
+\STATE ~~~ ~~~ $x_{prev} = x_{new}$
+\STATE ~~~ ~~~ $w = w + \log(p_{j-1}(x_{prev})) - \log(p_{j}(x_{prev}))$
+\STATE ~~~ \textbf{end for}
+\STATE ~~~ $\mathrm{samples}[s] = x_{prev}$
+\STATE ~~~ $\mathrm{weights}[s] = \exp(w)$
+\STATE \textbf{end for}
+\STATE \textbf{return} samples, weights
+\end{algorithmic}
+\end{algorithm}
+According to Algorithm \ref{alg:ais}, we obtain $1$ sample from the target $p_0(x)$ and the associated importance weight at the cost of $n$ samples from intermediate distributions $p_j(x)$. The algorithm is using an equation for computing the importance weights, let's derive it below.\\
+
+AIS can be seen as importance sampling in an extended $z$-space $\{z_0,...,z_{n-1}\}$. We can represent the target distribution as follows:
+\begin{equation}
+    p(z) \propto f(z) = f_0(z_0)\tilde{T}_1(z_0, z_1)\tilde{T}_2(z_1, z_2)\times \cdots \times \tilde{T}_{n-1}(z_{n-2}, z_{n-1})
+\end{equation}
+where $\tilde{T}_{j}$ is the reversal of $T_j$. We assume the samples satisfy detailed balance:
+\begin{eqnarray}
+   p_j(z)\tilde{T}_{j}(z, z^{\prime}) &=& p_j(z^{\prime})T_{j}(z^{\prime}, z) \\
+   \tilde{T}_{j}(z, z^{\prime}) &=& T_{j}(z^{\prime}, z)\frac{p_j(z^{\prime})}{p_{j}(z)} = T_{j}(z^{\prime}, z)\frac{f_j(z^{\prime})}{f_j(z)}
+\end{eqnarray}
+As a result, we can re-write the target distribution as follows:
+\begin{equation}
+   p(z) \propto f_0(z_0)\bigg[T_1(z_1, z_0)\frac{f_1(z_1)}{f_1(z_0)}\bigg]\bigg[T_2(z_2, z_1)\frac{f_2(z_2)}{f_2(z_1)}\bigg]\times ... \times \bigg[T_{n-1}(z_{n-1}, z_{n-2})\frac{f_{n-1}(z_{n-1})}{f_{n-1}(z_{n-2})}\bigg] 
+\end{equation}
+Similarly, the proposal distribution is given by:
+\begin{equation}
+    q(z) \propto g(z) = f_{n}(z_{n-1})T_{n-1}(z_{n-1}, z_{n-2})\times \cdots \times T_2(z_2, z_1)T_1(z_1, z_0)
+\end{equation}
+Thus, the importance weights are given by:
+\begin{eqnarray}
+    w &=& \frac{f(z_0,...,z_{n-1})}{g(z_0,...,z_{n-1})} \nonumber \\ 
+      &=& \frac{f_0(z_0)\bigg[T_1(z_1, z_0)\frac{f_1(z_1)}{f_1(z_0)}\bigg]\bigg[T_2(z_2, z_1)\frac{f_2(z_2)}{f_2(z_1)}\bigg]\times \cdots \times \bigg[T_{n-1}(z_{n-1}, z_{n-2})\frac{f_{n-1}(z_{n-1})}{f_{n-1}(z_{n-2})}\bigg]}{T_1(z_1, z_0)T_2(z_2, z_1)\times \cdots \times T_{n-1}(z_{n-1}, z_{n-2})f_n(z_{n-1})} \nonumber \\
+    &=& \frac{f_{n-1}(z_{n-1})}{f_n(z_{n-1})}\times \frac{f_{n-2}(z_{n-2})}{f_{n-1}(z_{n-2})}\times \cdots \times \frac{f_1(z_1)}{f_2(z_1)}\times \frac{f_0(z_0)}{f_1(z_0)}
+\end{eqnarray}
+We can see a telescoping product of ratios of distributions which is equal to standard importance sampling when $n=1$.\\ 
+
+AIS can also be used to approximate the ratio of normalizing constants. Suppose, we are interested in computed an expected value of $f(x)$. We can proceed as follows:
 \begin{eqnarray}
     E[f(x)] &=& \int f(x)p(x)dx = \int f(x)\frac{q(x)}{q(x)}p(x)dx = \frac{Z_q}{Z_p}\int f(x)\frac{\tilde{p}(x)}{\tilde{q}(x)}q(x)dx \nonumber \\
     &=& \frac{Z_q}{Z_p}\frac{1}{S}\sum_{s=1}^{S}\tilde{w}(s)f(s),~\mathrm{where}~s\sim q(x)~\mathrm{and}~\tilde{w}(s) = \frac{\tilde{p}(s)}{\tilde{q}(s)}
@@ -288,4 +338,5 @@ Combining the two expression above, we get:
 \begin{equation}
     E[f] = \frac{Z_q}{Z_p}\frac{1}{S}\sum_{s=1}^{S}\tilde{w}(s)f(s) = \frac{\frac{1}{S}\sum_s \tilde{w}(s)f(s)}{\frac{1}{S}\sum_s \tilde{w}(s)} = \sum_{s=1}^{S}w(s)f(s)
 \end{equation}
+
 
