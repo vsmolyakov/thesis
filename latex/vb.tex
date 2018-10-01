@@ -1,3 +1,5 @@
+\subsection{Introduction}
+
 This section focuses on a class of approximate inference algorithms based on variational inference. The basic idea is to choose an approximation $q(x)$ from a tractable family of distributions and then make this approximation as close as possible to the true posterior $p^{\ast}(x)$. This reduces inference to an optimization problem.\\
 
 We can use KL divergence to measure the distance between distributions. In particular, we use reverse KL to make the computation tractable.
@@ -396,3 +398,41 @@ The on-line variational inference algorithm for Hierarchical Dirichlet Process w
     \caption{Sample of HDP topics inferred using online variational bayes algorithm on 20newsgroups dataset.}
     \label{fig:hdp_topics_vb}
 \end{figure}
+
+\subsection{Normalizing Flows}
+
+A normalizing flow describes the transformation of a probability density through a sequence of invertible mappings \cite{Rezende2015}. The target density is approximated through a flow of the prior distribution through a sequence of invertible (one-to-one) transformations resulting in the target posterior density.\\
+
+The basic rule for transformation of densities considers an invertible, smooth mapping $f: \mathbb{R}^{d}\rightarrow \mathbb{R}^{d}$. Recall, that in the case of discrete random variables, for a one-to-one $y=f(x)$ where $X \sim p(x)$, the transformed density is $p_y(y) = \sum_{\{x : y = f(x)\}} p_x(x)$. If $X$ is a continuous random variable, we can differentiate the CDF to obtain an expression for the transformed density:
+\begin{eqnarray}
+   F_{y}(y) &=& P(Y \leq y) = P(f(X) \leq y) = P(X \leq f^{-1}(y)) \\
+   p_{y}(y) &=& \frac{d}{dy}F_{y}(y) = \frac{d}{dy}P(X \leq f^{-1}(y)) = \frac{dx}{dy}\frac{d}{dx}P(X \leq f^{-1}(y)) = p_x(x)|\frac{dx}{dy}|
+\end{eqnarray}
+The above expression generalizes for high dimensional transformations using a Jacobian:
+\begin{equation}
+    p_y(y) = p_x(x)|\mathrm{det}\bigg(\frac{\partial x}{\partial y}\bigg)|
+\end{equation}
+Let's examine a $k$ step transformation:
+\begin{equation}
+    z_k = f_k \circ f_{k-1} \circ \cdots \circ f_{2} \circ f_{1} (z_0) = f_k(f_{k-1}(\cdots f_{2}(f_{1}(z_0))))
+\end{equation}
+For $k=1$, we have $z_1 = f_{1}(z_0)$, where $z_0 \sim q_{0}(z_0)$ and
+\begin{equation}
+   q_{1}(z_1) = q_{0}(z_0)|\mathrm{det}\bigg(\frac{\partial z_0}{\partial z_1}\bigg)|  = q_{0}(z_0)|\mathrm{det}\bigg(\frac{\partial f_{1}^{-1}}{\partial z_1}\bigg)| = q_{0}(z_0)|\mathrm{det}\bigg(\frac{\partial f_{1}}{\partial z_0}\bigg)|^{-1}  
+\end{equation}
+For $k=2$, we have $z_2 = f_2 \circ f_1 (z_0) = f_2(f_1(z_0)) = f_2(z_1)$ that we can re-write as:
+\begin{equation}
+    q_{2}(z_2) = q_1(z_1)|\mathrm{det}\bigg(\frac{\partial f_2}{\partial z_1} \bigg)|^{-1} =  q_{0}(z_0)|\mathrm{det}\bigg(\frac{\partial f_{1}}{\partial z_0}\bigg)|^{-1} \times |\mathrm{det}\bigg(\frac{\partial f_2}{\partial z_1} \bigg)|^{-1} 
+\end{equation}
+Generalizing for $k$ steps, we have:
+\begin{equation}
+    q_{k}(z_k) = q_{0}(z_0)|\mathrm{det}\bigg(\frac{\partial f_{1}}{\partial z_0}\bigg)|^{-1} \times |\mathrm{det}\bigg(\frac{\partial f_2}{\partial z_1} \bigg)|^{-1} \times \cdots \times |\mathrm{det}\bigg(\frac{\partial f_k}{\partial z_{k-1}}\bigg)|^{-1} 
+\end{equation}
+Taking the log, we can represent this compactly as:
+\begin{equation}
+    \log q(z_k) = \log q(z_0) - \sum_{i=1}^{K}\log|\mathrm{det}\bigg(\frac{\partial f_i}{\partial z_{i-1}}\bigg)|
+\end{equation}
+
+
+
+
