@@ -432,6 +432,45 @@ Taking the log, we can represent this compactly as:
 \begin{equation}
     \log q(z_k) = \log q(z_0) - \sum_{i=1}^{K}\log|\mathrm{det}\bigg(\frac{\partial f_i}{\partial z_{i-1}}\bigg)|
 \end{equation}
+Note the above expressions represents our objective function that would like to optimize over the parameters of the transformation functions which we are going to look into next. Also, having learned the transformation parameters, we can compute expectations with respect to any of the intermediate distributions by drawing samples from the prior:
+\begin{eqnarray}
+    E_{q_k}[h(z)] &=& \int q_k(z)h(z) dz = \frac{1}{n}\sum_{i=1}^{n} h(z_{i}^{k}),~~~\mathrm{where}~~~z_{i}^{k} \sim q_k(z) \\
+    &=& \frac{1}{n}\sum_{i=1}^{n}h(f_k \circ f_{k-1} \circ \cdots \circ f_1(z_{i}^{0})), ~~~\mathrm{where}~~~z_{i}^{0} \sim q_0(z) \\
+    &=& E_{q_0}[h(f_k \circ f_{k-1} \circ \cdots \circ f_1(z_{i}^{0}))]
+\end{eqnarray}
+
+For NF inference, we need to identify a class of invertible transformations and efficient algorithms for computing determinant of the Jacobian. We are going to look at two classes of flows: \textit{planar} and \textit{radial}. These are just two of the many maps that can be used and alternative transforms can be designed to satisfy posterior approximation constraints such as restricted support. A planar transform can be defined as follows:
+\begin{equation}
+    f(z) = z + uh(w^{t}z + b)
+\end{equation}
+parameterized by $\lambda = \{w \in \mathbb{R}^{d}, u \in \mathbb{R}^{d}, b \in \mathbb{R}\}$, where $h$ is a smooth, point-wise non-linearity with derivative $h^{\prime}$ (such as $\tanh$). For planar flow of this form, we can compute the logdet Jacobian term in $O(D)$ time:
+\begin{equation}
+    |\det \frac{\partial f}{\partial z}| = |\det (I + uh^{\prime}(w^{t}z + b)w^{t})| = |1 + u^{t}h^{\prime}(w^{t}z + b)w|
+\end{equation}
+As a result, we are interested in maximizing the objective:
+\begin{equation}
+    \max_{\{w_k,u_k,b_k\}} \log q_0(z) - \sum_{k=1}^{K} \log |1 + u_{k}^{t}h^{\prime}(w_{k}^{t}z_{k-1} + b_k)w_k|
+\end{equation}
+
+Alternatively, we can consider a family of transformations that modify an initial density $q_0$ around a reference point $z_0$, known as a radial flow:
+\begin{equation}
+    f(z) = z + \beta h(\alpha, r)(z-z_0)
+\end{equation}
+where $r = |z-z_0|$ and $h(\alpha, r) = 1/(\alpha + r)$ and the parameters of the map are $\lambda = \{z_0 \in \mathbb{R}^{d}, \alpha \in \mathbb{R}^{+}, \beta \in \mathbb{R}\}$. This family also allows for linear computation of the determinant:
+\begin{equation}
+    |\det \frac{\partial f}{\partial z}| = [1+\beta h(\alpha,r)]^{d-1}[1 + \beta h(\alpha,r) + \beta h^{\prime}(\alpha, r)r]
+\end{equation}
+
+The effect of invertible flows could be understood as a sequence of expansions or contractions on the initial density. The resuling distribution is transformed by increasing density outside its original region (expansion) or concentrating in its original region (contraction). With an appropriate choice of transformation $f_k$ we can use a simple prior distribution such as factorized Gaussian and by applying normalizing flows of different lengths, we obtain increasingly complex and multi-modal distributions. One question one may ask is how to choose $K$ the length of the flow that invites a non-parametric way of looking at normalizing flows.\\
+
+
+
+
+
+
+
+
+
 
 
 
