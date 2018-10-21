@@ -432,7 +432,16 @@ Taking the log, we can represent this compactly as:
 \begin{equation}
     \log q(z_k) = \log q(z_0) - \sum_{i=1}^{K}\log|\mathrm{det}\bigg(\frac{\partial f_i}{\partial z_{i-1}}\bigg)|
 \end{equation}
-Note the above expressions represents our objective function that would like to optimize over the parameters of the transformation functions which we are going to look into next. Also, having learned the transformation parameters, we can compute expectations with respect to any of the intermediate distributions by drawing samples from the prior:
+Note the above density is parametrized by one-to-one, invertible transformations $f_k(\cdot)$. In order to learn the flow parameters, we consider the following variational inference objective.
+\begin{equation}
+    \log p(x) \geq E_q\big[\log \frac{p(x,z)}{q(z|x)} \big] = \mathrm{ELBO} = -F(x)
+\end{equation}
+Thus, we are interested in maximizing the ELBO or equivalently minimizing the free energy $F(x)$. Treating $F(x)$ as a loss function, we can expand it as follows:
+\begin{eqnarray}
+    &&\min F(x) = E_{q(z|x)}\bigg[\log \frac{q(z|x)}{p(x,z)} \bigg] = E_{q_0(z_0)}\bigg[\log q_k(z_k) - \log p(x, z_k)\bigg] \nonumber \\
+ &=& E_{q_0(z_0)}\bigg[\log q_0(z_0)\bigg] - E_{q_0(z_0)}\bigg[\sum_{k=1}^{K}\log|\det\bigg(\frac{\partial f_i}{\partial z_{i-1}} \bigg)|\bigg] - E_{q_0(z_0)}\bigg[\log p(x, z_k)\bigg]
+\end{eqnarray}
+where $E_{q_0(z_0)}$ is Monte Carlo expectation with respect to the prior distribution $q_0(z)$. Note that we can ignore the first term in the objective function because it doesn't depend on the flow paramters. Also, we swapped the expectation wrt to $q(z)$ to an expectation with respect to the prior $q_0(z)$, this is true in general for normalizing flows since we can fix the flow parameters and can compute expectations with respect to any of the intermediate distributions by drawing samples from the prior:
 \begin{eqnarray}
     E_{q_k}[h(z)] &=& \int q_k(z)h(z) dz = \frac{1}{n}\sum_{i=1}^{n} h(z_{i}^{k}),~~~\mathrm{where}~~~z_{i}^{k} \sim q_k(z) \\
     &=& \frac{1}{n}\sum_{i=1}^{n}h(f_k \circ f_{k-1} \circ \cdots \circ f_1(z_{i}^{0})), ~~~\mathrm{where}~~~z_{i}^{0} \sim q_0(z) \\
@@ -463,8 +472,7 @@ where $r = |z-z_0|$ and $h(\alpha, r) = 1/(\alpha + r)$ and the parameters of th
 
 The effect of invertible flows could be understood as a sequence of expansions or contractions on the initial density. The resuling distribution is transformed by increasing density outside its original region (expansion) or concentrating in its original region (contraction). With an appropriate choice of transformation $f_k$ we can use a simple prior distribution such as factorized Gaussian and by applying normalizing flows of different lengths, we obtain increasingly complex and multi-modal distributions. One question one may ask is how to choose $K$ the length of the flow that invites a non-parametric way of looking at normalizing flows.\\
 
-
-
+\subsubsection{NF experiments}
 
 
 
