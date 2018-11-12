@@ -273,7 +273,7 @@ Annealed Importance Sampling (AIS) is a method that combines independent importa
 
 Consider a sequence of distributions $p_n(x), p_{n-1}(x),...,p_1(x), p_0(x)$, where $p_0(x)$ is our target distribution of interest (a posterior) and $p_n(x)$ is a starting distribution (a prior). Our goals is to draw samples from a multi-modal $p_0(x)$ by using a sequence of intermediate distributions $p_j(x)$:
 \begin{equation}
-    p_j(x) = p_0(x)^{\beta_j}p_n(x)^{1-\beta_j},~~~\mathrm{where}~~~ 0 = \beta_n < \beta_{n-1} < \cdots < \beta_{0} = 1
+    p_j(x) \propto p_0(x)^{\beta_j}p_n(x)^{1-\beta_j},~~~\mathrm{where}~~~ 0 = \beta_n < \beta_{n-1} < \cdots < \beta_{0} = 1
 \end{equation}
 We assume that we can draw samples from intermediate distributions $p_j(x)$ via a sequence of Markov chains $T_j(x, x^{\prime})$ that model a transition from state $x$ to $x^{\prime}$. $T_j(x, x^{\prime})$ can be any of the Markov chain methods that satisfy detailed balance, i.e. Gibbs, Slice or Metropolis-Hastings (MH) samplers. The AIS algorithm can be summarized as follows:
 
@@ -357,7 +357,7 @@ The variance of the AIS estimator is given by:
 \end{equation}
 To check whether AIS estimate is consistent, we need to show that as we increase the number of samples $n$, the estimate $\hat{a}$ converges to the true value $a$ in probability:
 \begin{equation}
-    \lim_{n\rightarrow \infty} P(|\hat{a} - a| > \epsilon) = 0
+    \lim_{n\rightarrow \infty} P(|\hat{a}_n - a| > \epsilon) = 0
 \end{equation}
 Using Chebyshev's inequality, we can bound the deviation from $a$ as follows:
 \begin{equation}
@@ -380,9 +380,20 @@ We can use $n_{eff}$ is a kind of diagnostics for the importance sampler where t
 \subsubsection{AIS experiments}
 
 \textbf{Minimum Working Example}
-
 %TODO describe experimental set-up + improvements (e.g. higher dimensional, multi-modal)
 %TODO include ratio of normalizers estimation and MSE plot (see Qiang Liu's paper)
+To test how well AIS can estimate the quantities of interest such as posterior mean and normalization constant, we design the following experiment. Let $p_n = N(0, 1)$ be the standard normal prior distribution and $p_0 \propto N(-5, 2)$ be the unnormalized posterior. We let $\beta$ linearly vary in the interval $[0, 1]$ divided into $100$ steps, i.e. we have $100$ intermediate distributions formed by taking a weighted geometric average between the prior and the posterior.
+
+\begin{figure}[tbhp]
+    \centering
+    \includegraphics[width=\textwidth, trim={10 10 10 10}]{figures/ais_exp1.png}
+    \caption{AIS posterior mean estimate (left). AIS normalizer estimate (middle). AIS effective sample size (right).}
+    \label{fig:ais_exp1}
+\end{figure}
+
+We use $n=10$ step Metropolis-Hastings (MH) sampler to sample from intermediate distributions and compute importance weights as described in Algorithm \ref{alg:ais}. The experimental results are summarized in Figure \ref{fig:ais_exp1}. As expected, as the number of AIS samples increases the variance of our estimate drops. However, the AIS estimator is not completely unbiased as we can see from Figure \ref{fig:ais_exp1} (left) since the ground truth value is $-5$. Similarly, there's evidence of bias in the normalization constant estimate as can be seen in Figure \ref{fig:ais_exp1} (middle), since the ground truth value is equal to $Z_0/Z_n = \sqrt{4\pi} = 3.545$. This bias is most likely caused by the fact that samples are not completely independent (due to MH). We can also measure our sample efficiency by observing the number of effective samples Figure \ref{fig:ais_exp1} (right) as we vary the variance of our prior distribution. The solid bars indicate the effective number of samples out of a total of $1000$.  
+
+
 
 
 

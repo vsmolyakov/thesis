@@ -448,17 +448,17 @@ where $E_{q_0(z_0)}$ is Monte Carlo expectation with respect to the prior distri
     &=& E_{q_0}[h(f_k \circ f_{k-1} \circ \cdots \circ f_1(z_{i}^{0}))]
 \end{eqnarray}
 
-For NF inference, we need to identify a class of invertible transformations and efficient algorithms for computing determinant of the Jacobian. We are going to look at two classes of flows: \textit{planar} and \textit{radial}. These are just two of the many maps that can be used and alternative transforms can be designed to satisfy posterior approximation constraints such as restricted support. A planar transform can be defined as follows:
+For NF inference, we need to identify a class of invertible transformations and efficient algorithms for computing determinant of the Jacobian. \textit{Planar} and \textit{radial} flows were designed in a way that makes their determinant of Jacobian easy to compute. Other extensions include auto-regressive flows. A planar transform can be defined as follows:
 \begin{equation}
     f(z) = z + uh(w^{t}z + b)
 \end{equation}
-parameterized by $\lambda = \{w \in \mathbb{R}^{d}, u \in \mathbb{R}^{d}, b \in \mathbb{R}\}$, where $h$ is a smooth, point-wise non-linearity with derivative $h^{\prime}$ (such as $\tanh$). For planar flow of this form, we can compute the logdet Jacobian term in $O(D)$ time:
+parameterized by $\lambda = \{w \in \mathbb{R}^{d}, u \in \mathbb{R}^{d}, b \in \mathbb{R}\}$, where $h$ is a smooth, point-wise non-linearity (such as $\tanh$) with derivative $h^{\prime}$. For a planar flow of this form, we can compute the logdet Jacobian term in $O(D)$ time:
 \begin{equation}
     |\det \frac{\partial f}{\partial z}| = |\det (I + uh^{\prime}(w^{t}z + b)w^{t})| = |1 + u^{t}h^{\prime}(w^{t}z + b)w|
 \end{equation}
-As a result, we are interested in maximizing the objective:
+As a result, we are interested in optimizing the objective:
 \begin{equation}
-    \max_{\{w_k,u_k,b_k\}} \log q_0(z) - \sum_{k=1}^{K} \log |1 + u_{k}^{t}h^{\prime}(w_{k}^{t}z_{k-1} + b_k)w_k|
+    \min_{\{w_k,u_k,b_k\}} - E_{q_0}\bigg[\sum_{k=1}^{K} \log |1 + u_{k}^{t}h^{\prime}(w_{k}^{t}z_{k-1} + b_k)w_k|\bigg] - E_{q_0}\bigg[\log p(x, z_k)\bigg]
 \end{equation}
 
 Alternatively, we can consider a family of transformations that modify an initial density $q_0$ around a reference point $z_0$, known as a radial flow:
@@ -470,13 +470,43 @@ where $r = |z-z_0|$ and $h(\alpha, r) = 1/(\alpha + r)$ and the parameters of th
     |\det \frac{\partial f}{\partial z}| = [1+\beta h(\alpha,r)]^{d-1}[1 + \beta h(\alpha,r) + \beta h^{\prime}(\alpha, r)r]
 \end{equation}
 
-The effect of invertible flows could be understood as a sequence of expansions or contractions on the initial density. The resuling distribution is transformed by increasing density outside its original region (expansion) or concentrating in its original region (contraction). With an appropriate choice of transformation $f_k$ we can use a simple prior distribution such as factorized Gaussian and by applying normalizing flows of different lengths, we obtain increasingly complex and multi-modal distributions. One question one may ask is how to choose $K$ the length of the flow that invites a non-parametric way of looking at normalizing flows.\\
+The effect of invertible flows can be understood as a sequence of expansions or contractions on the initial density. The resuling distribution is transformed by increasing density outside its original region (expansion) or concentrating in its original region (contraction). With an appropriate choice of transformation $f_k$ we can use a simple prior distribution such as factorized Gaussian and by applying normalizing flows of different lengths, we obtain increasingly complex and multi-modal distributions. One question one may ask is how to choose $K$ the length of the flow that invites a non-parametric way of looking at normalizing flows.\\
 
 \subsubsection{NF experiments}
 
+To evaluate how well NF can approximate posterior densities, we designed the following experiment. Let $p(x) \propto \exp\{-E(x)\}$ be our target distribution with energy $E(x)$ defined as follows:
+\begin{equation}
+    E(x) = \frac{1}{2}\bigg(\frac{||z||-2}{0.4}\bigg)^{2} - \log \bigg(e^{-\frac{1}{2}\big[\frac{z_1-2}{0.6}\big]^{2}} + e^{-\frac{1}{2}\big[\frac{z_1+2}{0.6}\big]^{2}} \bigg)
+\end{equation}
+We restrict ourselves to $K$ planar flows and define the training epoch to be $512$ iterations with a mini-batch size of $512$ samples drawn from standard normal prior. The NF algorithm is implemented in PyTorch using CUDA GPU. 
 
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=\textwidth, trim={10 10 10 10}]{figures/nf_exp1.png}
+    \caption{Samples from NF approximation to ground truth density.}
+    \label{fig:nf_exp1}
+\end{figure}
 
+Figure \ref{fig:nf_exp1} shows samples drawn from NF model trained to minimize the free energy loss $F(x)$:
+\begin{equation}
+    \log p(x) \geq E_q\bigg[\log \frac{p(x,z)}{q(z|x)}\bigg] = \mathrm{ELBO} = -F(x)
+\end{equation}
+We can see that as the number of iterations progresses the NF approximations starts to resemble the ground truth density.\\
 
+Since the ground truth density is $2$ dimensional, we can compute the ground truth value of $\log p(x)$ using numerical integration as well as Annealed Importance Sampling (AIS).
+
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=0.9\textwidth, trim={10 10 10 10}]{figures/nf_exp2.png}
+    \caption{NF variational objective gap (left). NF timing experiments (right).}
+    \label{fig:nf_exp2}
+\end{figure}
+
+Figure \ref{fig:nf_exp2} (left) shows the variational objective gap between the negative free energy and the ground truth value estimated by numerical integration:
+\begin{equation}
+    \log p(x) = \mathrm{ELBO} + D_{KL}(q(z)||p(z|x))
+\end{equation}
+We can see that as we increase the number of planar flows $K$, we get a more accurate representation of the posterior. Timing experiments in Figure \ref{fig:nf_exp2} (right) show that GPU provides about $10x$ speed up in comparison with CPU and linear increase with the number of flows $K$. 
 
 
 
