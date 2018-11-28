@@ -456,7 +456,7 @@ parameterized by $\lambda = \{w \in \mathbb{R}^{d}, u \in \mathbb{R}^{d}, b \in 
 \begin{equation}
     |\det \frac{\partial f}{\partial z}| = |\det (I + uh^{\prime}(w^{t}z + b)w^{t})| = |1 + u^{t}h^{\prime}(w^{t}z + b)w|
 \end{equation}
-As a result, we are interested in optimizing the objective:
+As a result, we are interested in optimizing the non-convex objective:
 \begin{equation}
     \min_{\{w_k,u_k,b_k\}} - E_{q_0}\bigg[\sum_{k=1}^{K} \log |1 + u_{k}^{t}h^{\prime}(w_{k}^{t}z_{k-1} + b_k)w_k|\bigg] - E_{q_0}\bigg[\log p(x, z_k)\bigg]
 \end{equation}

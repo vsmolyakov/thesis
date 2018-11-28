@@ -1,6 +1,95 @@
-\subsection{Simulated Annealing}
+\subsection{Natural Gradient Descent}
 
-Simulated annealing is a stochastic algorithm that attempts to find the global optimum of an objective function $f(x)$. The method is inspired by statistical physics, in particular the Boltzmann distribution that specifies the probability of being in a particular state $x$:
+\subsection{Non-Convex Optimization}
+
+Non-convex problems are NP hard to solve and in general no algorithmic technique is expected to succeed at finding global optima solutions to these problems. However, non-convex problems that have a certain structure can be solved in polynomial time, such as projections on non-convex constraints and structural properties of the objective funcions (e.g. marginal convexity) \cite{NonConvexML}
+
+\subsubsection{Projected Gradient Descent}
+
+Exploiting the projected gradient descent algorithm with non-convex problems requires projections onto non-convex sets:
+\begin{equation}
+    \Pi_{C}(z) = \arg \min_{x \in C} ||x-z||_2
+\end{equation}
+The projection problem above can itself be NP hard. However, for several well-structured sets, projections can be carried out efficiently despite the sets being non-convex. For example, projecting into sparse vectors:
+\begin{equation}
+    \hat{w} = \arg \min_{||w||_0 \leq s} \sum_{i=1}^{n}\big(y_i - x_{i}^{T}w \big)^{2}
+\end{equation}
+The projection above can be done by sorting co-ordinates of the $z$ vector in descending order and setting all except that top $s$ coordinates to zero. Similarly, projections into low-rank matrices as used in recommendation systems:
+\begin{equation}
+    \hat{A_{lr}} = \arg \min_{rank(X) \leq r}\sum_{(i,j)\in \Omega}\big(X_{ij} - A_{ij}\big)^{2}
+\end{equation}
+The projection above can be done by applying singular value decomposition of the matrix $A$ and keeping the top $r$ singular values and vectors. Non-convex projections are used in the generalized Projected Gradient Descent (PGD) summarized in Algorithm \ref{alg:general_pgd}.
+
+\begin{algorithm}
+\caption{Generalized Projected Gradient Descent}
+\label{alg:general_pgd}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} objective function $f$, constraint set $C$, step length $\eta$
+\STATE \textbf{Output:} A point $\hat{x} \in C$ with near-optimal objective value
+\STATE $x^{1} \leftarrow 0$
+\STATE \textbf{for} t = 1,2,...,T \textbf{do}
+\STATE ~~~ $z^{t+1} = x^{t} - \eta \nabla f(x^{t})$
+\STATE ~~~ $x^{t+1} = \arg \min_{x \in C}||x - z^{t+1}||$
+\STATE \textbf{end for}
+\STATE option 1: \textbf{return} $\hat{x}_{final} = x^{T}$
+\STATE option 2: \textbf{return} $\hat{x}_{avg} = \frac{1}{T}\sum_t x^{t}$
+\STATE option 3: \textbf{return} $\hat{x}_{best} = \arg \min_{t \in [T]} f(x^{t})$
+\end{algorithmic}
+\end{algorithm}
+We can see two alternating steps of moving in the direction opposite to the gradient and projecting the resulting value on our non-convex constrain set. 
+
+\subsubsection{Alternating Minimization}
+
+Alternating Minimization (AM) is a widely used non-convex optimization technique. The popular K-means clustering algorithm and the EM algorithm for latent variable models are problem-specific variants of the general alternating minimization principle. The alternating minimization principle is most often used in settings where the optimization problem consists of two or more groups of variables. For example, in a collaborative filtering recommendation system, the objective function is not jointly convex, however, it is \textit{marginally convex}:
+\begin{equation}
+    \hat{A}_{lv} = \arg \min_{U \in R^{m\times r}, V \in R^{n\times r}} \sum_{(i,j)\in \Omega}\big(U_{i}^{T}V_{j}\big)^{2}
+\end{equation}
+For a group of two variables, we can write down alternative minimization as in Algorithm \ref{alg:alt_min}
+\begin{algorithm}
+\caption{Alternating Minimization}
+\label{alg:alt_min}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} objective function $f: X \times Y \rightarrow R$
+\STATE \textbf{Output:} A point $\hat{x} \in X \times Y$ with near-optimal objective value
+\STATE $(x^{1}, y^{1}) \leftarrow INIT()$
+\STATE \textbf{for} t = 1,2,...,T \textbf{do}
+\STATE ~~~ $x^{t+1} = \arg \min_{x \in X} f(x, y^t)$
+\STATE ~~~ $y^{t+1} = \arg \min_{y \in Y} f(x^{t+1}, y)$
+\STATE \textbf{end for}
+\STATE \textbf{return} $(x^{T}, y^{T})$
+\end{algorithmic}
+\end{algorithm}
+
+The idea of solving several intermediate marginal optimization problems instead of a single big optimization problem is the key to practical success of alternating minimization algorithm. Algorithms similar to alternating minimization are commonly known as Coordinate Descent (CD) and are very popular for large scale convex optimization problems. The coordinate descent treats a single $p$ dimensional variable $x \in R^{p}$ as $p$ one-dimensional variables $\{x_1,...,x_p\}$ and executes AM like steps resulting in intermediate problems being uni-dimensional. A variant of Coordinate Descent splits variables into blocks of multi-dimensional variables and minimizes over one block of variables at each time step. 
+
+\subsubsection{Stochastic Optimization Techniques}
+
+One of the main hurdles in achieving local optimality in high dimensional problems are saddle points. Saddle points are characterized by zero gradient and Hessian matrix with both positive and negative eigen values. They stall the progress of optimization methods such as gradient descent due to the vanishing gradient while not characterizing the function in any useful way in contrast to local optima. However, saddle points are unstable and a slight perturbation is likely to cause gradient descent to roll down the function surface. This motivates stochastic optimization techniques.
+
+Saddle points can often be caused by symmetry of the objective function and they increase exponentially with the dimension of the problem. This motivates the application of Noisy Gradient Descent (NGD) Algorithm \ref{alg:noisy_gd}.
+
+\begin{algorithm}
+\caption{Noisy Gradient Descent}
+\label{alg:noisy_gd}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} objective $f$, constraint set $C$, max step length $\eta_{\max}$, tolerance $\epsilon$
+\STATE \textbf{Output:} A locally optimal point $\hat{x} \in R^{p}$ 
+\STATE $x^{1} \leftarrow INIT()$
+\STATE Set $T = 1/\eta^{2}$, where $\eta = \min\{\epsilon^{2}/\log^{2}(1/\epsilon),\eta_{\max}\}$
+\STATE \textbf{for} t = 1,2,...,T \textbf{do}
+\STATE ~~~ sample perturbation $\zeta^{t} \sim S^{p-1}$ //random point on a unit sphere
+\STATE ~~~ $g^{t} = \nabla f(x^{t}) + \zeta^{t}$
+\STATE ~~~ $x^{t+1} = \Pi_{C}(x^{t} - \eta g^{t})$ //project onto constraint set
+\STATE \textbf{end for}
+\STATE \textbf{return} $x^{T}$
+\end{algorithmic}
+\end{algorithm}
+
+The technique of using randomly pertrubed (stochastic) gradients to escape saddle ponts is part of a more general framework of Langevin Dynamics which studies the case when the perturbations are not isotropic or are applied at a scale that adapts to the problem. 
+
+\subsubsection{Simulated Annealing}
+
+Simulated Annealing (SA) is a stochastic algorithm that attempts to find the global optimum of an objective function $f(x)$. The method is inspired by statistical physics, in particular the Boltzmann distribution that specifies the probability of being in a particular state $x$:
 \begin{equation}
     p(x) \propto \exp\{-f(x)/T\}
 \end{equation}
