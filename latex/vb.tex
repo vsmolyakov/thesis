@@ -472,6 +472,72 @@ where $r = |z-z_0|$ and $h(\alpha, r) = 1/(\alpha + r)$ and the parameters of th
 
 The effect of invertible flows can be understood as a sequence of expansions or contractions on the initial density. The resuling distribution is transformed by increasing density outside its original region (expansion) or concentrating in its original region (contraction). With an appropriate choice of transformation $f_k$ we can use a simple prior distribution such as factorized Gaussian and by applying normalizing flows of different lengths, we obtain increasingly complex and multi-modal distributions. One question one may ask is how to choose $K$ the length of the flow that invites a non-parametric way of looking at normalizing flows.\\
 
+\subsubsection{Annealed NF}
+
+Annealed Normalizing Flows explores the hypothesis that if we don't take the steepest descent path but take one guided by AIS, we can arrive at a better solution (non-greedy). The annealed NF algorithm is summarized in Algorithm \ref{alg:annealed_nf}\\
+
+\begin{algorithm}
+\caption{Annealed Normalizing Flows}
+\label{alg:annealed_nf}
+\begin{algorithmic}[1]
+\STATE Initialize $\phi$ randomly
+\STATE \textbf{for} $t = 1$ to $T$ \textbf{do} 
+\STATE ~~~ $x_0 \sim N(0, I)$ //sample a mini-batch of data of size m
+\STATE ~~~ $x_k = f_k \circ f_{k-1} \circ \cdots \circ f_1(x_0)$ //NF forward pass
+\STATE ~~~ $\beta_t = \beta(t, a) = 1-\exp \big(-at\big)$ //update beta
+\STATE ~~~ $\log p_t(x_k) = (1-\beta_t)\log N(0, I) + \beta_t \log p(x_k)$ //compute annealed target distribution
+\STATE ~~~ $\log q(x_k; \phi) = \log q(z_0) - \sum_{i=1}^{K}\log | \det \bigg(\frac{\partial f_i}{\partial x_{i-1}} \bigg)|$ //compute variational approximation
+\STATE ~~~ $\mathrm{Loss}(x_k) = E_{q0}\bigg[\log q(x_k; \phi) - \log p_t(x_k)\bigg]$ // compute variational loss (negative ELBO)
+\STATE ~~~ $\phi = \phi - \epsilon_t \times g$, where $g = \frac{1}{m}\sum_{i=1}^{m}\nabla_{\phi}\mathrm{Loss}(x_{k}^{(i)}; \phi)$ //update NF parameters (backward pass)
+\STATE \textbf{end for}
+\end{algorithmic}
+\end{algorithm}
+
+Geometric average of the prior and target distributions used to create an intermediate $p_t(x_k)$ minimizes a weighted sum of the KL divergences to the prior $p_a$ and target $p_b$:
+\begin{eqnarray}
+    p_t(x_k) &=& \arg \min_q (1-\beta)D_{KL}(q||p_a) + \beta D_{KL}(q||p_b) \\
+    && \mathrm{s.t.}~\sum_x q(x) = 1
+\end{eqnarray}
+The objective function above is minimized by $p_t(x_k)$ that allocates mass in the intersection of $p_a$ and $p_b$ (due to reverse KL), i.e. $p_t(x_k)$ is high in regions that are likely under both the prior and the target distributions as shown in Figure \ref{fig:ga_ma_path}. To see why the expression above is true we can include the constraints as part of the objective and optimize the Lagrangian:
+\begin{eqnarray}
+    L(q) &=& \lambda(1-\sum_x q(x)) + (1-\beta)\sum_x q(x)\big[\log q(x) - \log p_a(x)\big] \nonumber \\
+         &+& \beta\sum_x q(x) \big[\log q(x) - \log p_b(x)\big] \\
+         &=& \lambda(1-\sum_x q(x)) + \sum_x q(x) \log q(x) \nonumber \\
+         &-& \sum_x q(x)\big[(1-\beta)\log p_a(x) + \beta \log p_b(x)\big]
+\end{eqnarray}
+By taking the derivative of $L(q)$ and setting it to zero, we get:
+\begin{eqnarray}
+    \frac{d L(q)}{d q(x)} &=& -\lambda + \log q(x) + 1 - \big[(1-\beta)\log p_a(x) + \beta \log p_b(x)\big] = 0 \\
+    \log q(x) &=& \lambda - 1 + \log p_{a}^{1-\beta}(x) + \log p_{b}^{\beta}(x) \\
+    q(x) &\propto& p_{a}^{1-\beta}(x)p_{b}^{\beta}(x)
+\end{eqnarray}
+for some constant $\lambda$, s.t. $\sum_x q(x) = 1$. If $p_a$ and $p_b$ belong to an exponential family $P$ with natural parameters $\theta_{p_a}$ and $\theta_{p_b}$, the optimum distribution is also in exponential family with natural parameters $\theta_{\beta} = (1-\beta)\theta_{p_a} + \beta\theta_{p_b}$.\\
+
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=0.4\textwidth, trim={10 10 10 10}]{figures/ga_ma_path.png}
+    \caption{Geometric Average (GA) path (left) and Moment Average (MA) path (right). Figure source: \cite{Grosse2013}.}
+    \label{fig:ga_ma_path}
+\end{figure}
+
+If instead we minimize the forward KL objective with respect to natural parameters $\theta$ of the approximating distribution, we obtain the Moment Average (MA) path \cite{Grosse2013}. 
+\begin{equation}
+    \arg \min_\theta (1-\beta)D_{KL}(p_a||q(x;\theta)) + \beta D_{KL}(p_b||q(x;\theta))
+\end{equation}
+We can re-write the objective as follows:
+\begin{eqnarray}
+    J(\theta) &=& (1-\beta)\sum_x p_a(x)\big[\log p_a(x) - \log q(x;\theta) \big] \nonumber \\
+    &+& \beta \sum_x p_b(x)\big[\log p_b(x) - \log q(x;\theta)\big] \\
+    &=& \mathrm{const} - \sum_{x}\big[(1-\beta)p_a(x) + \beta p_b(x)]\log q(x) \\
+    &=& \mathrm{const}^{\prime} + \log Z(\theta) - \sum_x\big[(1-\beta)p_a(x)+\beta p_b(x)\big]\theta^{T}\phi(x)
+\end{eqnarray}
+By setting the derivative to zero, we get:
+\begin{eqnarray}
+    \frac{\partial J(\theta)}{\partial \theta_i} &=& E_q[\phi_i(x)] - \sum_x\big[(1-\beta)p_a(x)+\beta p_b(x)\big]\phi_i(x) = 0 \\
+    E_q[\phi_i(x)] &=& (1-\beta)E_{p_a}[\phi_i(x)] + \beta E_{p_b}[\phi_i(x)]
+\end{eqnarray}
+The above expression can be interpreted as drawing $(1-\beta)$ fraction of points from $p_a$ and $\beta$ fraction of points from $p_b$. Notice that because we are optimizing the forward KL, the approximating distribution includes the support of both $p_a$ and $p_b$ as shown in Figure \ref{fig:ga_ma_path}. 
+
 \subsubsection{NF experiments}
 
 To evaluate how well NF can approximate posterior densities, we designed the following experiment. Let $p(x) \propto \exp\{-E(x)\}$ be our target distribution with energy $E(x)$ defined as follows:
