@@ -572,10 +572,25 @@ Figure \ref{fig:nf_exp2} (left) shows the variational objective gap between the 
 \begin{equation}
     \log p(x) = \mathrm{ELBO} + D_{KL}(q(z)||p(z|x))
 \end{equation}
-We can see that as we increase the number of planar flows $K$, we get a more accurate representation of the posterior. Timing experiments in Figure \ref{fig:nf_exp2} (right) show that GPU provides about $10x$ speed up in comparison with CPU and linear increase with the number of flows $K$. 
+We can see that as we increase the number of planar flows $K$, we get a more accurate representation of the posterior. Timing experiments in Figure \ref{fig:nf_exp2} (right) show that GPU provides about $10x$ speed up in comparison with CPU and linear increase with the number of flows $K$.\\
 
+In addition, we can estimate the distance between samples from NF and ground truth distributions using Wasserstein distance with entropy regularization:
+\begin{eqnarray}
+    d_{M}(a,b) &=& \min_{P}\langle P,M\rangle_F - \lambda H(P) \\
+    \mathrm{s.t.}~&&~Pe = a \nonumber \\
+    &&~P^{T}e = b \nonumber \\
+    &&P_{ij} \geq 0
+\end{eqnarray}
+where $P$ is the transport matrix and $p_{ij}$ is the amount of mass moved from point $i$ in distribution $a$ to point $j$ in distribution $b$. $P$ is doubly stochastic and non-negative. $M$ is the cost matrix, a pair-wise distance matrix between samples from distribution $a$ and samples from distribution $b$. The distribution $a$ consists of 1024 samples from trained NF network and distribution $b$ consists of 1024 samples based on grid-discretized ground truth density. Note that the entropy term makes $P$ less sparse, while we want to preserve sparsity (i.e. avoid having to move many points in $a$ go to many points in $b$). However, this formulation leads to efficient matrix scaling algorithm based on Sinkhorn iterations \cite{Cuturi2013}. 
 
+\begin{figure}[thpb]
+    \centering
+    \includegraphics[width=0.6\textwidth, trim={10 10 10 10}]{figures/wasserstein_dist.png}
+    \caption{Impact of prior distribution $N([4,0]^{T}, \Sigma)$. Left: $\Sigma = I$, only one mode of the target distribution is discovered with $d_{M}(a,b) = 0.069$. Right: $\Sigma = 10I$, both modes are recovered with $d_{M}(a,b) = 0.0087$}
+    \label{fig:wasserstein_dist}
+\end{figure}
 
+Figure \ref{fig:wasserstein_dist} shows the affect of the prior covariance on samples from NF distribution. We set the prior to $N([4,0]^{T}, \Sigma)$ where in one case $\Sigma = I$ (left) and int he second case $\Sigma = 10I$ (right). We compute Wasserstein distances $d_{M}(a,b)$ between the NF samples and the ground truth in each case. We can see that for a more concentrated prior, only one mode of the target distribution is discovered with $d_{M}(a,b) = 0.069$, while in the case of $\Sigma = 10I$, both modes are discovered and $d_{M}(a,b) = 0.0087$. 
 
 
 
