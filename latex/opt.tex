@@ -27,6 +27,18 @@ Thus, our optimal $d$ is in the opposite direction of the gradient preconditione
     \tilde{\nabla}_\theta L (\theta) = I(\theta)^{-1}\nabla_{\theta}L(\theta)
 \end{equation}
 
+It's common to use Taylor series expansion of the objective function. We can define two important properties that characterize the speed of convergence: $\alpha$-strong convexity and $\beta$-smoothness. Let $\delta = x - x_0$, then 2nd order Taylor expansion is:
+\begin{equation}
+    f(x + \delta) = f(x) + \nabla^{T}f(x)\delta + \frac{1}{2}\delta^{T}H(x)\delta
+\end{equation}
+By subtracting the linear approximation from the original $f(x)$, we define the following lower and upper bounds:
+\begin{equation}
+    \frac{\alpha}{2}||\delta||_{2}^{2} \leq f(x+ \delta) - \bigg[f(x) + \nabla^{T}f(x)\delta \bigg] \leq \frac{\beta}{2}||\delta||_{2}^{2}
+\end{equation}
+The coefficient $\alpha$ bounds the degree of flatness of our objective function $f(x)$ and is related to amount of progress gradient descent can make along the objective. The coefficient $\beta$ bounds the degree of smoothness a function can have (e.g. think of the corner in the absolute value function) 
+Together, $\alpha$-strong convexity and $\beta$-smoothness characterize the speed of convergence of gradient descent.
+
+
 \subsection{Non-Convex Optimization}
 
 Non-convex problems are NP hard to solve and in general no algorithmic technique is expected to succeed at finding global optima solutions to these problems. However, non-convex problems that have a certain structure can be solved in polynomial time, such as projections on non-convex constraints and structural properties of the objective funcions (e.g. marginal convexity) \cite{NonConvexML}
