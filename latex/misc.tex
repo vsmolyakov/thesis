@@ -102,6 +102,19 @@ It is a concave function with maximum uncertainty of $1$ bit occuring at $p=\fra
 \begin{equation}
     H(\lambda p_1 + (1-\lambda) p_2) \geq \lambda H(p_1) + (1-\lambda) H(p_2)
 \end{equation}
+\textit{Proof.} To prove that $H(p)$ is concave at $p$, we can use the log-sum inequality. Let $p_\lambda(y) = \lambda p_1(y) + (1-\lambda)p_2(y)$then,
+\begin{eqnarray}
+    -H(p_\lambda) &=& \sum_y p_\lambda(y) \log p_\lambda(y) \\ \nonumber
+    &=& \sum_y \big[\lambda p_1(y) + (1-\lambda)p_2(y)\big] \log \big[\lambda p_1(y) + (1-\lambda)p_2(y) \big]
+\end{eqnarray}
+Let's use the log-sum inequality with $K=2$ and $a_1 = \lambda p_1(y)$, $a_2 = (1-\lambda)p_2(y)$, $b_1 = \lambda$ and $b_2 = (1-\lambda)$:
+\begin{eqnarray}
+    -H(p_\lambda) &\leq& \lambda p_1(y)\log \frac{\lambda p_1(y)}{\lambda} + (1-\lambda)p_2(y)\log \frac{(1-\lambda)p_2(y)}{1-\lambda} \\ \nonumber
+    &=& \lambda p_1(y)\log p_1(y) + (1-\lambda)p_2(y)\log p_2(y) \\ \nonumber
+    &=& -\big[\lambda H(p_1) + (1-\lambda)H(p_2)\big]
+\end{eqnarray}
+
+
 Since $0\leq p(x) \leq 1$, we have $\log \frac{1}{p(x)} \geq 0$, and for a discrete $X$, the entropy is non-negative: $H(X)\geq 0$. We can find an upper bound for entropy using the Jensen's inequality:
 \begin{eqnarray}
     H(X) &=& \sum_{x \in \cal X} p(x)\log \frac{1}{p(x)} \\
@@ -182,6 +195,21 @@ However, KL divergence is not a true distance between distributions because it i
 \end{eqnarray}
 Thus, $H(X) \leq \log |\cal X|$ with equality iff $p(x) = u(x)$. 
 
+Before discussing the structure / properties of $D(p||q)$, it's helpful to introduce the log-sum inequality.
+\begin{theorem}
+Let $a_1,...,a_n$ and $b_1,...,b_n$ be non-negative numbers. Let $a = \sum_{i=1}^{n}a_i$ and $b = \sum_{i=1}^{n}b_i$ then
+\begin{equation}
+    \sum_{i=1}^{n}a_i\log \frac{a_i}{b_i} \geq a \log \frac{a}{b}
+\end{equation}
+with equality iff $\frac{a_i}{b_i}$ are equal for all $i$.
+\end{theorem}
+\textit{Proof}. Let's define $f(x) = x\log x$, notice that $f(x)$ is convex (since $f^{\prime \prime}(x) = \frac{1}{x} > 0$ for $x > 0$). Then, we have:
+\begin{eqnarray}
+    \sum_{i=1}^{n} a_i \log \frac{a_i}{b_i} &=& \sum_{i=1}^{n}b_i f(\frac{a_i}{b_i}) = b \sum_{i=1}^{n}\frac{b_i}{b}f(\frac{a_i}{b_i}) \\ \nonumber
+    &\geq& bf\bigg(\sum_{i=1}^{n}\frac{b_i}{b}\frac{a_i}{b_i}\bigg) = bf\bigg(\frac{1}{b}\sum_{i=1}^{n}a_i \bigg) = bf\big(\frac{a}{b}\big) \\ \nonumber 
+    &=& a \log \frac{a}{b}
+\end{eqnarray}
+
 \begin{theorem}
    $KL(p||q)$ is convex in the pair $(p,q)$, i.e.
    \begin{equation}
@@ -197,7 +225,7 @@ Then for a fixed $x$, it suffices to show that
 \begin{equation}
     \sum_{i=1,2} \lambda_i p_i \log \frac{\lambda_i p_i}{\lambda_i q_i} \geq \bigg(\sum_{i=1,2}\lambda_i p_i \bigg)\bigg(\log \frac{\sum_i \lambda_i p_i}{\sum_i \lambda_i q_i} \bigg)
 \end{equation}
-where $\lambda_1 = \lambda$ and $\lambda_2 = 1-\lambda$, which is exactly the log-sum inequality.\\
+where $\lambda_1 = \lambda$ and $\lambda_2 = 1-\lambda$, which is exactly the log-sum inequality. Note that divergence being convex in $(p, q)$ implies that it is convex in $p$ and $q$ individually, i.e. set $p_1 = p_2 = p$ or $q_1 = q_2 = q$.\\ 
 
 In order to find a distribution $q(x) \in Q$ that is closest to $p(x) \in P$, we can minimize $KL(q||p)$ with respect to $q(x)$ known as I-projection or information projection:
 \begin{equation}
@@ -211,7 +239,7 @@ Both the I-projection and the M-projection are projections of a probability dist
 \begin{equation}
     KL(q||p) \geq KL(q||p^{\ast}) + KL(p^{\ast}||p)
 \end{equation}
-The inequality can be interpreted as information-geometric version of Pythagoras' triangle inequality theorem, where KL divergernce is viewed as squared distance in Euclidean space.\\
+The inequality can be interpreted as information-geometric version of Pythagoras' triangle inequality theorem, where KL divergence is viewed as squared distance in Euclidean space.\\
 If we are interested in measuring the distance between two multivariate Gaussian distributions with means $\mu_1$ and $\mu_2$ and covariances $\Sigma_1$ and $\Sigma_2$, the KL divergence can be computed in closed form:
 \begin{eqnarray}
     KL(p||q) &=& \int p(x) \log \frac{p(x)}{q(x)} = \int [\log p(x) - \log q(x)] p(x) dx \nonumber \\
