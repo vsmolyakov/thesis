@@ -2,7 +2,20 @@ This section focuses on derivation of Bayesian inference algorithms for a variet
 
 %TODO: note on markov chain techniques (why markov dependency between samples at all)
 
-\subsection{MLE / MAP}
+\subsection{Maximum Likelihood Estimation}
+The most common approach to parameter estimation is to pick the parameters that assign highest probability to the training data. This is known as Maximum Likelihood Estimation (MLE).
+
+\begin{eqnarray}
+    \hat{\theta}_{mle} &=& \arg\max_{\theta} P(D|\theta) = \arg\max_{\theta}\prod_{n=1}^{N}p(y_n|x_n, \theta) = \arg\max_{\theta}\sum_{n=1}^{N}\log p(y_n|x_n,\theta) \nonumber \\
+    &=& \arg\min \mathrm{NLL}(\theta) = \arg\min_{\theta} - \sum_{n=1}^{N}\log p(y_n|x_n,\theta)
+\end{eqnarray}
+where $x_n$ and $y_n$ are the input and output data, respectively. In the unsupervised case:
+\begin{equation}
+ \hat{\theta}_{mle} =  \arg\min_{\theta} - \sum_{n=1}^{N}\log p(y_n|\theta)
+\end{equation}
+
+In \textit{Empirical Risk Minimization} (ERM), we replace NLL with any loss and take expectation wrt empirical distribution. For example, a 0-1 loss or a surrogate loss often chosen to be the maximally tight convex upper bound which is then easy to minimize.
+
 \subsubsection{Naive Bayes}
 Consider discrete-valued features $x \in \{1,...,K\}^{D}$ where $D$ is the number of features and $K$ is the number of distinct values they can take on. The Naive Bayes model assumes conditional independence of random variables $x$ given the class labels $y$, i.e.
 \begin{equation}
